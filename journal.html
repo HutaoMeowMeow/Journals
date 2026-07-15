@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Journal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="bg-decor" aria-hidden="true">
+    <span class="bg-corner corner-tl"></span>
+    <span class="bg-corner corner-tr"></span>
+    <span class="bg-corner corner-bl"></span>
+    <span class="bg-corner corner-br"></span>
+    <span class="bg-inkblot"></span>
+    <span class="bg-doodle doodle-star-1"></span>
+    <span class="bg-doodle doodle-star-2"></span>
+    <span class="bg-stitch"></span>
+  </div>
+
+  <div class="journal-page">
+
+    <header class="journal-topbar">
+      <div>
+        <h1>My Journal</h1>
+        <p id="welcome-text" class="welcome-text">Welcome back</p>
+      </div>
+      <button id="logout-btn">Log Out</button>
+    </header>
+
+    <div class="journal-layout">
+
+      <aside class="sidebar">
+        <div class="card calendar-card">
+          <div class="calendar-header">
+            <button id="prev-month" type="button">‹</button>
+            <span id="calendar-month-label"></span>
+            <button id="next-month" type="button">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <button id="clear-date-filter" class="clear-filter-btn hidden" type="button">Show All Entries</button>
+        </div>
+
+        <!-- MOOD STATS WIDGET -->
+        <div class="card mood-stats-card">
+          <h3 class="mood-stats-title">Mood Summary</h3>
+          <p id="mood-stats-month" class="mood-stats-month"></p>
+          <div id="mood-stats-body">
+            <p class="no-entries">No entries yet this month.</p>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+
+        <div class="card entry-form">
+          <input type="text" id="entry-title" placeholder="Entry title (optional)" />
+          <textarea id="entry-text" placeholder="What happened today?"></textarea>
+
+          <div class="mood-picker" id="mood-picker">
+            <button type="button" class="mood-btn" data-mood="😊">😊</button>
+            <button type="button" class="mood-btn" data-mood="😢">😢</button>
+            <button type="button" class="mood-btn" data-mood="😠">😠</button>
+            <button type="button" class="mood-btn" data-mood="😴">😴</button>
+            <button type="button" class="mood-btn" data-mood="😍">😍</button>
+            <button type="button" class="mood-btn" data-mood="😐">😐</button>
+          </div>
+
+          <label class="photo-upload-label" for="photo-input">
+            Attach a photo (optional)
+            <input type="file" id="photo-input" accept="image/*" />
+          </label>
+          <p id="photo-filename" class="photo-filename"></p>
+
+          <div class="form-buttons">
+            <button id="add-entry-btn" type="button">Add Entry</button>
+            <button id="cancel-edit-btn" type="button" class="cancel-btn hidden">Cancel</button>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="🔍 Search your entries..." />
+        </div>
+
+        <div id="filter-label" class="filter-label hidden"></div>
+
+        <div id="entries-list" class="entries-list"></div>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ENVELOPE OVERLAY -->
+  <div id="envelope-overlay" class="envelope-overlay hidden">
+    <div class="envelope-backdrop"></div>
+    <div class="envelope-scene">
+      <div class="envelope" id="envelope">
+        <div class="envelope-back"></div>
+        <div class="letter" id="letter">
+          <div class="letter-date" id="letter-date"></div>
+          <div class="letter-entries" id="letter-entries"></div>
+        </div>
+        <div class="envelope-flap"></div>
+        <div class="envelope-front-left"></div>
+        <div class="envelope-front-right"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTO LIGHTBOX -->
+  <div id="photo-lightbox-overlay" class="photo-lightbox-overlay hidden">
+    <img id="photo-lightbox-img" class="photo-lightbox-img" src="" alt="Full size photo" />
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/journal.js"></script>
+</body>
+</html>

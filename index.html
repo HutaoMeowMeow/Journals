@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Journal - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="auth-container">
+
+    <div id="login-form">
+      <h1>Welcome back 👋</h1>
+      <p class="subtitle">Sign in to your Journal account</p>
+
+      <label>Email or Username</label>
+      <div class="input-icon">
+        <span>📧</span>
+        <input type="text" id="login-identifier" placeholder="user@journal.com" />
+      </div>
+
+      <label>Password</label>
+      <div class="input-icon">
+        <span>🔒</span>
+        <input type="password" id="login-password" placeholder="Enter your password" />
+      </div>
+
+      <button id="login-btn">LOG IN</button>
+      <p id="login-error" class="error"></p>
+      <p class="switch-text">Don't have an account? <a href="#" id="show-signup">Sign Up</a></p>
+    </div>
+
+    <div id="signup-form" class="hidden">
+      <h1>Create Account</h1>
+      <p class="subtitle">Join Journal and start writing</p>
+
+      <label>Full Name</label>
+      <div class="input-icon">
+        <span>👤</span>
+        <input type="text" id="signup-fullname" placeholder="Juan dela Cruz" />
+      </div>
+
+      <label>Username</label>
+      <div class="input-icon">
+        <span>@</span>
+        <input type="text" id="signup-username" placeholder="juandelacruz" />
+      </div>
+
+      <label>Email Address</label>
+      <div class="input-icon">
+        <span>📧</span>
+        <input type="email" id="signup-email" placeholder="user@journal.com" />
+      </div>
+
+      <label>Password</label>
+      <div class="input-icon">
+        <span>🔒</span>
+        <input type="password" id="signup-password" placeholder="At least 8 characters" />
+      </div>
+
+      <label>Confirm Password</label>
+      <div class="input-icon">
+        <span>🔒</span>
+        <input type="password" id="signup-confirm-password" placeholder="Re-enter your password" />
+      </div>
+
+      <button id="signup-btn">CREATE ACCOUNT</button>
+      <p id="signup-error" class="error"></p>
+      <p class="switch-text">Already have an account? <a href="#" id="show-login">Log in</a></p>
+    </div>
+
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>
