@@ -528,22 +528,25 @@ function openEnvelope(dateKey) {
 
   envelopeOverlay.classList.remove("hidden");
   envelope.classList.remove("open");
-
-  setTimeout(() => {
-    envelope.classList.add("open");
-  }, 150);
 }
 
 function closeEnvelope() {
+  const wasOpen = envelope.classList.contains("open");
   envelope.classList.remove("open");
   setTimeout(() => {
     envelopeOverlay.classList.add("hidden");
-  }, 400);
+  }, wasOpen ? 400 : 0);
 }
 
 envelopeOverlay.addEventListener("click", (e) => {
   const letter = document.getElementById("letter");
-  if (!letter.contains(e.target)) {
+  if (letter.contains(e.target)) return;
+
+  if (envelope.classList.contains("open")) {
+    closeEnvelope();
+  } else if (envelope.contains(e.target)) {
+    envelope.classList.add("open");
+  } else {
     closeEnvelope();
   }
 });
