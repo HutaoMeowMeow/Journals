@@ -37,7 +37,7 @@
         <h1>My Journal</h1>
         <p id="welcome-text" class="welcome-text">Welcome back</p>
       </div>
-      <button id="logout-btn">Log Out</button>
+      <button id="logout-btn" class="text-link-btn">Log Out</button>
     </header>
 
     <div class="journal-layout">
@@ -69,8 +69,31 @@
       <main class="main-content">
 
         <div class="card entry-form">
+
+          <!-- Wax seal stamp, animates down onto the page when an entry is saved -->
+          <div class="wax-seal-stamp" id="wax-seal-stamp" aria-hidden="true">
+            <div class="wax-seal-stamp-inner">J</div>
+          </div>
+
           <input type="text" id="entry-title" placeholder="Entry title (optional)" />
-          <textarea id="entry-text" placeholder="What happened today?"></textarea>
+
+          <div class="paper-toolbar">
+            <div class="ink-picker" id="ink-picker">
+              <span class="toolbar-label">Ink:</span>
+              <button type="button" class="ink-dot ink-sepia selected" data-ink="sepia" title="Sepia"></button>
+              <button type="button" class="ink-dot ink-ivory" data-ink="ivory" title="Ivory"></button>
+              <button type="button" class="ink-dot ink-dustyrose" data-ink="dustyrose" title="Dusty Rose"></button>
+              <button type="button" class="ink-dot ink-toffee" data-ink="toffee" title="Toffee Taupe"></button>
+              <button type="button" class="ink-dot ink-stone" data-ink="stone" title="Stone"></button>
+              <button type="button" class="ink-dot ink-nude" data-ink="nude" title="Nude"></button>
+              <button type="button" class="ink-dot ink-darkrose" data-ink="darkrose" title="Dark Rose"></button>
+              <button type="button" class="ink-dot ink-blue" data-ink="blue" title="Prussian Blue"></button>
+              <button type="button" class="ink-dot ink-charcoal" data-ink="charcoal" title="Charcoal"></button>
+              <button type="button" class="ink-dot ink-olive" data-ink="olive" title="Olive"></button>
+            </div>
+          </div>
+
+          <textarea id="entry-text" class="paper-lined ink-sepia" placeholder="What happened today?"></textarea>
 
           <div class="mood-picker" id="mood-picker">
             <button type="button" class="mood-btn" data-mood="😊">😊</button>
@@ -81,11 +104,22 @@
             <button type="button" class="mood-btn" data-mood="😐">😐</button>
           </div>
 
-          <label class="photo-upload-label" for="photo-input">
-            Attach a photo (optional)
-            <input type="file" id="photo-input" accept="image/*" />
-          </label>
-          <p id="photo-filename" class="photo-filename"></p>
+          <!-- Card catalog tag input -->
+          <div class="tag-input-row">
+            <span class="tag-input-icon" aria-hidden="true"></span>
+            <input type="text" id="tag-input" placeholder="Add a tag and press Enter (e.g. travel)" />
+          </div>
+          <div class="tag-chips" id="tag-chips"></div>
+
+          <!-- Custom photo attach control (native input hidden, paperclip-styled trigger) -->
+          <div class="photo-attach">
+            <label class="photo-upload-label" for="photo-input">
+              <span class="paperclip-icon" aria-hidden="true"></span>
+              <span class="photo-upload-text">Clip a photo to this page</span>
+              <input type="file" id="photo-input" accept="image/*" />
+            </label>
+            <p id="photo-filename" class="photo-filename"></p>
+          </div>
 
           <div class="form-buttons">
             <button id="add-entry-btn" type="button">Add Entry</button>
