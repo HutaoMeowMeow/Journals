@@ -8,11 +8,45 @@
 </head>
 <body>
 
+  <!-- Ambient vintage background decoration (corner flourishes, ink blot, doodles, stitched edge) -->
+  <div class="bg-decor" aria-hidden="true">
+    <span class="bg-corner corner-tl"></span>
+    <span class="bg-corner corner-tr"></span>
+    <span class="bg-corner corner-bl"></span>
+    <span class="bg-corner corner-br"></span>
+    <span class="bg-inkblot"></span>
+    <span class="bg-doodle doodle-star-1"></span>
+    <span class="bg-doodle doodle-star-2"></span>
+    <span class="bg-stitch"></span>
+  </div>
+
+  <!-- Falling autumn leaves -->
+  <div class="bg-leaves" aria-hidden="true">
+    <span class="leaf leaf-1"></span>
+    <span class="leaf leaf-2"></span>
+    <span class="leaf leaf-3"></span>
+    <span class="leaf leaf-4"></span>
+    <span class="leaf leaf-5"></span>
+    <span class="leaf leaf-6"></span>
+    <span class="leaf leaf-7"></span>
+    <span class="leaf leaf-8"></span>
+  </div>
+
   <div class="auth-container">
+
+    <!-- corner flourishes on the card itself -->
+    <span class="auth-corner auth-corner-tl" aria-hidden="true"></span>
+    <span class="auth-corner auth-corner-tr" aria-hidden="true"></span>
+    <span class="auth-corner auth-corner-bl" aria-hidden="true"></span>
+    <span class="auth-corner auth-corner-br" aria-hidden="true"></span>
+
+    <!-- wax seal emblem -->
+    <div class="auth-seal" aria-hidden="true">J</div>
 
     <div id="login-form">
       <h1>Welcome back 👋</h1>
       <p class="subtitle">Sign in to your Journal account</p>
+      <div class="ornate-divider" aria-hidden="true"><span>❧</span></div>
 
       <label>Email or Username</label>
       <div class="input-icon">
@@ -34,6 +68,7 @@
     <div id="signup-form" class="hidden">
       <h1>Create Account</h1>
       <p class="subtitle">Join Journal and start writing</p>
+      <div class="ornate-divider" aria-hidden="true"><span>❧</span></div>
 
       <label>Full Name</label>
       <div class="input-icon">
@@ -72,7 +107,6 @@
 
   </div>
 
-  <!-- Updated Firebase SDKs: paths now match your root directory -->
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="auth.js"></script>
 </body>
