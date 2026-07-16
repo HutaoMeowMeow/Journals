@@ -73,6 +73,100 @@ body:has(.auth-container) {
     inset 0 0 40px rgba(139, 111, 63, 0.08);
   width: 380px;
   position: relative;
+  z-index: 1;
+}
+
+/* faint compass-rose watermark inside the card, painted first so real content sits above it */
+.auth-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  border-radius: inherit;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-position: 115% 112%;
+  background-size: 280px 280px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='700' height='700'><g fill='none' stroke='%236b5738' stroke-width='2'><circle cx='350' cy='350' r='300' stroke-dasharray='3 9'/><circle cx='350' cy='350' r='230'/><circle cx='350' cy='350' r='150' stroke-dasharray='2 6'/><line x1='500' y1='350' x2='640' y2='350'/><line x1='456' y1='456' x2='555' y2='555'/><line x1='350' y1='500' x2='350' y2='640'/><line x1='244' y1='456' x2='145' y2='555'/><line x1='200' y1='350' x2='60' y2='350'/><line x1='244' y1='244' x2='145' y2='145'/><line x1='350' y1='200' x2='350' y2='60'/><line x1='456' y1='244' x2='555' y2='145'/><path d='M350 336 L364 350 L350 364 L336 350 Z' fill='%236b5738' stroke='none'/></g></svg>");
+}
+
+.auth-container > #login-form,
+.auth-container > #signup-form {
+  position: relative;
+  z-index: 1;
+}
+
+/* corner flourishes echoing the parchment corner motif used elsewhere */
+.auth-corner {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  z-index: 2;
+  opacity: 0.55;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='130' height='130'><g fill='none' stroke='%236b5738' stroke-width='3'><path d='M8 70 L8 8 L70 8'/><path d='M8 8 C24 8 24 24 8 24'/><path d='M26 8 C42 3 54 18 38 28 C54 34 60 18 70 22'/><path d='M8 26 C3 42 18 54 28 38 C34 54 18 60 22 70'/></g></svg>");
+}
+
+.auth-corner-tl { top: 10px; left: 10px; }
+.auth-corner-tr { top: 10px; right: 10px; transform: scaleX(-1); }
+.auth-corner-bl { bottom: 10px; left: 10px; transform: scaleY(-1); }
+.auth-corner-br { bottom: 10px; right: 10px; transform: scale(-1, -1); }
+
+/* wax seal emblem perched on the top edge of the card */
+.auth-seal {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-5deg);
+  width: 54px;
+  height: 54px;
+  z-index: 3;
+  border-radius: 46% 54% 58% 42% / 48% 44% 56% 52%;
+  background: radial-gradient(circle at 35% 30%, #b8453a 0%, #8b2f22 45%, #6e1f16 100%);
+  box-shadow:
+    inset -3px -4px 6px rgba(0,0,0,0.4),
+    inset 3px 3px 5px rgba(255,150,120,0.25),
+    0 4px 10px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: 20px;
+  color: rgba(230, 190, 160, 0.6);
+  text-shadow: -1px -1px 1px rgba(255,255,255,0.15), 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ornamental divider between the subtitle and the fields */
+.ornate-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 22px;
+  color: #8b6f3f;
+}
+
+.ornate-divider::before,
+.ornate-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #b89968);
+}
+
+.ornate-divider::after {
+  background: linear-gradient(to left, transparent, #b89968);
+}
+
+.ornate-divider span {
+  font-size: 15px;
+  line-height: 1;
+  transform: translateY(-1px);
 }
 
 .auth-container h1 {
@@ -87,7 +181,7 @@ body:has(.auth-container) {
 .subtitle {
   color: #6b5738;
   margin-top: 0;
-  margin-bottom: 26px;
+  margin-bottom: 16px;
   font-size: 13px;
   font-style: italic;
 }
@@ -968,6 +1062,35 @@ body:has(.auth-container) {
   width: 320px;
   height: 220px;
   animation: envelopeDrop 0.5s ease;
+  cursor: pointer;
+}
+
+.envelope.open {
+  cursor: default;
+}
+
+.envelope::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background-image:
+    linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.18) 42%, transparent 44%),
+    linear-gradient(65deg, transparent 55%, rgba(60,40,20,0.15) 57%, transparent 59%),
+    linear-gradient(150deg, transparent 70%, rgba(255,255,255,0.12) 72%, transparent 74%);
+  mix-blend-mode: overlay;
+}
+
+.envelope::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.3;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='4'/><feColorMatrix type='matrix' values='0 0 0 0 0.25  0 0 0 0 0.2  0 0 0 0 0.12  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>");
 }
 
 @keyframes envelopeDrop {
@@ -1033,21 +1156,44 @@ body:has(.auth-container) {
   transform: translateX(-50%) translateY(0);
   width: 280px;
   max-height: 60px;
-  background: #f3e9d2;
+  background: #ede0c0;
   border: 1px solid #b89968;
   border-radius: 2px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.25);
   padding: 18px 20px;
   z-index: 2;
   overflow: hidden;
-  transition: transform 0.6s ease 0.3s, max-height 0.5s ease 0.4s, overflow 0s 0.9s;
+  opacity: 0;
+  transition: transform 0.6s ease, max-height 0.5s ease, opacity 0.3s ease, z-index 0s 0.6s, overflow 0s 0.6s;
+}
+
+.letter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='lg'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='9'/><feColorMatrix type='matrix' values='0 0 0 0 0.25  0 0 0 0 0.2  0 0 0 0 0.12  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23lg)'/></svg>");
+}
+
+.letter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='320' viewBox='0 0 280 320'><g><polygon points='0,0 140,70 0,150' fill='%23000000' opacity='0.09'/><polygon points='280,0 140,70 280,150' fill='%23ffffff' opacity='0.12'/><polygon points='0,150 140,70 140,230' fill='%23ffffff' opacity='0.08'/><polygon points='280,150 140,70 140,230' fill='%23000000' opacity='0.10'/><polygon points='0,150 140,230 0,320' fill='%23000000' opacity='0.08'/><polygon points='280,150 140,230 280,320' fill='%23ffffff' opacity='0.10'/><polygon points='0,320 140,230 140,320' fill='%23ffffff' opacity='0.06'/><polygon points='280,320 140,230 140,320' fill='%23000000' opacity='0.07'/><line x1='0' y1='0' x2='280' y2='320' stroke='%23000000' stroke-width='1.5' opacity='0.06'/><line x1='280' y1='0' x2='0' y2='320' stroke='%23000000' stroke-width='1.5' opacity='0.06'/><line x1='0' y1='150' x2='280' y2='150' stroke='%23000000' stroke-width='1' opacity='0.05'/><line x1='140' y1='0' x2='140' y2='320' stroke='%23000000' stroke-width='1' opacity='0.05'/></g></svg>");
 }
 
 .envelope.open .letter {
   transform: translateX(-50%) translateY(-70px);
   max-height: 320px;
+  opacity: 1;
   z-index: 5;
   overflow-y: auto;
+  transition: transform 0.6s ease 0.3s, max-height 0.5s ease 0.4s, opacity 0.3s ease 0.35s, z-index 0s 0s, overflow 0s 0.9s;
 }
 
 .letter-date {
@@ -1085,6 +1231,46 @@ body:has(.auth-container) {
   font-size: 11px;
   font-style: italic;
   margin-top: 3px;
+}
+
+/* --- Wax seal on the flap --- */
+
+.wax-seal {
+  position: absolute;
+  top: 94px;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  border-radius: 46% 54% 58% 42% / 48% 44% 56% 52%;
+  background: radial-gradient(circle at 35% 30%, #b8453a 0%, #8b2f22 45%, #6e1f16 100%);
+  box-shadow:
+    inset -3px -4px 6px rgba(0,0,0,0.4),
+    inset 3px 3px 5px rgba(255,150,120,0.25),
+    0 3px 6px rgba(0,0,0,0.35),
+    13px 15px 0 -11px rgba(139,47,34,0.85),
+    -11px 13px 0 -12px rgba(110,31,22,0.85);
+  z-index: 8;
+  transition: opacity 0.15s ease;
+}
+
+.envelope.open .wax-seal {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wax-seal::before {
+  content: "J";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 17px;
+  color: rgba(230, 190, 160, 0.55);
+  text-shadow: -1px -1px 1px rgba(255,255,255,0.15), 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 @keyframes fadeIn {
@@ -1191,6 +1377,62 @@ body:has(.auth-container) {
   }
 }
 
+/* ---------- FALLING LEAVES ---------- */
+
+.bg-leaves {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.leaf {
+  position: absolute;
+  top: -60px;
+  width: 42px;
+  height: 42px;
+  opacity: 0;
+  background-color: var(--leaf-color, #c1440e);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='110'><path d='M50 2 L61 27 L82 18 L74 40 L98 42 L79 55 L92 72 L68 68 L70 90 L50 75 L30 90 L32 68 L8 72 L21 55 L2 42 L26 40 L18 18 L39 27 Z M46 75 L42 100 L58 100 L54 75 Z'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='110'><path d='M50 2 L61 27 L82 18 L74 40 L98 42 L79 55 L92 72 L68 68 L70 90 L50 75 L30 90 L32 68 L8 72 L21 55 L2 42 L26 40 L18 18 L39 27 Z M46 75 L42 100 L58 100 L54 75 Z'/></svg>");
+  filter: drop-shadow(0 3px 4px rgba(60, 30, 10, 0.3));
+  animation-name: leafFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes leafFall {
+  0%   { transform: translate3d(0, -10vh, 0) rotate(0deg);    opacity: 0; }
+  8%   { opacity: 0.8; }
+  25%  { transform: translate3d(50px, 25vh, 0) rotate(95deg); }
+  50%  { transform: translate3d(-35px, 50vh, 0) rotate(190deg); }
+  75%  { transform: translate3d(45px, 75vh, 0) rotate(285deg); }
+  92%  { opacity: 0.75; }
+  100% { transform: translate3d(-20px, 108vh, 0) rotate(360deg); opacity: 0; }
+}
+
+.leaf-1 { left: 4%;  width: 36px; height: 36px; animation-duration: 17s; animation-delay: -2s;  --leaf-color: #c1440e; }
+.leaf-2 { left: 16%; width: 50px; height: 50px; animation-duration: 22s; animation-delay: -9s;  --leaf-color: #daa520; }
+.leaf-3 { left: 30%; width: 32px; height: 32px; animation-duration: 15s; animation-delay: -5s;  --leaf-color: #a13d2b; }
+.leaf-4 { left: 45%; width: 54px; height: 54px; animation-duration: 25s; animation-delay: -14s; --leaf-color: #d2691e; }
+.leaf-5 { left: 59%; width: 38px; height: 38px; animation-duration: 19s; animation-delay: -3s;  --leaf-color: #b8860b; }
+.leaf-6 { left: 72%; width: 46px; height: 46px; animation-duration: 21s; animation-delay: -11s; --leaf-color: #8b3a2f; }
+.leaf-7 { left: 84%; width: 34px; height: 34px; animation-duration: 16s; animation-delay: -7s;  --leaf-color: #e08030; }
+.leaf-8 { left: 93%; width: 48px; height: 48px; animation-duration: 23s; animation-delay: -17s; --leaf-color: #cc6b3b; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-leaves {
+    display: none;
+  }
+}
+
 /* ---------- PHOTO LIGHTBOX ---------- */
 
 .photo-lightbox-overlay {
@@ -1219,4 +1461,17 @@ body:has(.auth-container) {
 @keyframes lightboxZoomIn {
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- RESPONSIVE: keep the auth card's new ornaments tidy on small screens ---------- */
+
+@media (max-width: 460px) {
+  .auth-container {
+    width: 100%;
+    padding: 42px 26px 34px;
+  }
+  .auth-corner {
+    width: 28px;
+    height: 28px;
+  }
 }
