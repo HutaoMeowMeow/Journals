@@ -32,6 +32,8 @@ const prevMonthBtn = document.getElementById("prev-month");
 const nextMonthBtn = document.getElementById("next-month");
 const photoInput = document.getElementById("photo-input");
 const photoFilename = document.getElementById("photo-filename");
+const inkPicker = document.getElementById("ink-picker");
+const waxSealStamp = document.getElementById("wax-seal-stamp");
 
 const moodStatsMonth = document.getElementById("mood-stats-month");
 const moodStatsBody = document.getElementById("mood-stats-body");
@@ -53,6 +55,31 @@ let selectedDateFilter = null;
 let calendarViewDate = new Date();
 let editingEntryId = null;
 let selectedPhotoFile = null;
+let selectedInk = "sepia";
+let selectedPaper = "lined";
+
+// Expanded vintage/nude ink palette
+const INK_LABELS = {
+  sepia: "Sepia",
+  ivory: "Ivory",
+  dustyrose: "Dusty Rose",
+  toffee: "Toffee Taupe",
+  stone: "Stone",
+  nude: "Nude",
+  darkrose: "Dark Rose",
+  blue: "Prussian Blue",
+  charcoal: "Charcoal",
+  olive: "Olive"
+};
+
+const PAPER_LABELS = { lined: "Lined", ledger: "Ledger", kraft: "Kraft", music: "Music Sheet" };
+
+// Removes any existing "ink-*" class from an element (used before applying a new ink color)
+function removeInkClasses(el) {
+  Array.from(el.classList).forEach((cls) => {
+    if (cls.startsWith("ink-")) el.classList.remove(cls);
+  });
+}
 
 // ---------- AUTH GUARD ----------
 onAuthStateChanged(auth, async (user) => {
@@ -84,12 +111,23 @@ moodPicker.querySelectorAll(".mood-btn").forEach((btn) => {
   });
 });
 
+// ---------- INK PICKER ----------
+inkPicker.querySelectorAll(".ink-dot").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    inkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    selectedInk = btn.dataset.ink;
+    removeInkClasses(entryText);
+    entryText.classList.add(`ink-${selectedInk}`);
+  });
+});
+
 // ---------- PHOTO INPUT ----------
 const MAX_PHOTO_BYTES = 700 * 1024; // stay safely under Firestore's 1MB doc limit
 
 photoInput.addEventListener("change", () => {
   selectedPhotoFile = photoInput.files[0] || null;
-  photoFilename.textContent = selectedPhotoFile ? `Selected: ${selectedPhotoFile.name}` : "";
+  photoFilename.textContent = selectedPhotoFile ? `Clipped: ${selectedPhotoFile.name}` : "";
 });
 
 // Resizes + compresses an image file, returns a base64 data URL string
@@ -160,6 +198,12 @@ function resetForm() {
   photoFilename.textContent = "";
   addEntryBtn.textContent = "Add Entry";
   cancelEditBtn.classList.add("hidden");
+
+  // Reset ink back to default
+  selectedInk = "sepia";
+  inkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.toggle("selected", b.dataset.ink === "sepia"));
+  removeInkClasses(entryText);
+  entryText.classList.add("ink-sepia");
 }
 
 // ---------- TOAST ----------
@@ -177,6 +221,15 @@ function showToast(message, type = "success") {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);
   }, 2500);
+}
+
+// ---------- WAX SEAL SAVE ANIMATION ----------
+function playSealAnimation() {
+  waxSealStamp.classList.remove("stamping");
+  // force reflow so the animation can be replayed back-to-back
+  void waxSealStamp.offsetWidth;
+  waxSealStamp.classList.add("stamping");
+  setTimeout(() => waxSealStamp.classList.remove("stamping"), 900);
 }
 
 // ---------- ADD OR UPDATE ENTRY ----------
@@ -203,6 +256,8 @@ addEntryBtn.addEventListener("click", async () => {
         title: title || "Untitled Entry",
         text: text,
         mood: selectedMood || "😐",
+        inkColor: selectedInk,
+        paper: selectedPaper,
         updatedAt: serverTimestamp()
       };
       if (photoURL) updateData.photoURL = photoURL;
@@ -216,6 +271,8 @@ addEntryBtn.addEventListener("click", async () => {
         title: title || "Untitled Entry",
         text: text,
         mood: selectedMood || "😐",
+        inkColor: selectedInk,
+        paper: selectedPaper,
         userId: currentUserId,
         dateKey: toDateKey(now),
         createdAt: serverTimestamp()
@@ -223,9 +280,10 @@ addEntryBtn.addEventListener("click", async () => {
       if (photoURL) newEntry.photoURL = photoURL;
 
       await addDoc(collection(db, "entries"), newEntry);
-      showToast("Entry added!", "success");
+      showToast("Entry sealed!", "success");
     }
 
+    playSealAnimation();
     resetForm();
   } catch (error) {
     showToast("Something went wrong: " + error.message, "error");
@@ -267,6 +325,14 @@ function renderEntries() {
   const searchTerm = searchInput.value.trim().toLowerCase();
   const isSearching = searchTerm.length > 0;
 
+  // Don't show anything until the user picks a date on the calendar (or searches)
+  if (!selectedDateFilter && !isSearching) {
+    entriesList.innerHTML = `<p class="no-entries">Select a date on the calendar to view your entries.</p>`;
+    filterLabel.classList.add("hidden");
+    clearDateFilterBtn.classList.add("hidden");
+    return;
+  }
+
   let filtered = allEntries;
 
   if (selectedDateFilter) {
@@ -302,12 +368,15 @@ function renderEntries() {
       ? entry.createdAt.toDate().toLocaleString()
       : "Just now";
 
+    const ink = entry.inkColor || "sepia";
+
     const photoHtml = entry.photoURL
       ? `
         <div class="photo-frame">
           <div class="washi-tape tape-left"></div>
           <div class="washi-tape tape-right"></div>
           <img class="attached-photo" src="${entry.photoURL}" alt="Journal photo" />
+          <div class="photo-caption">${entry.title || "Untitled Entry"}</div>
         </div>
       `
       : "";
@@ -322,7 +391,7 @@ function renderEntries() {
         </div>
       </div>
       ${photoHtml}
-      <p class="entry-text">${entry.text}</p>
+      <p class="entry-text ink-${ink}">${entry.text}</p>
       <div class="entry-meta-row">
         <p class="entry-date">${date}</p>
       </div>
@@ -352,6 +421,16 @@ function renderEntries() {
         b.classList.toggle("selected", b.dataset.mood === entry.mood);
       });
       selectedMood = entry.mood;
+
+      // Restore ink + paper style used for this entry
+      selectedInk = entry.inkColor || "sepia";
+      selectedPaper = entry.paper || "lined";
+      inkPicker.querySelectorAll(".ink-dot").forEach((b) => {
+        b.classList.toggle("selected", b.dataset.ink === selectedInk);
+      });
+      removeInkClasses(entryText);
+      entryText.classList.remove("paper-lined", "paper-ledger", "paper-kraft", "paper-music");
+      entryText.classList.add(`ink-${selectedInk}`, `paper-${selectedPaper}`);
 
       editingEntryId = entry.id;
       addEntryBtn.textContent = "Save Changes";
@@ -520,7 +599,7 @@ function openEnvelope(dateKey) {
           <span>${entry.mood || "😐"}</span>
           <span>${entry.title || "Untitled Entry"}</span>
         </div>
-        <div>${entry.text}</div>
+        <div class="ink-${entry.inkColor || "sepia"}">${entry.text}</div>
         <div class="letter-entry-time">${time}</div>
       </div>
     `;
