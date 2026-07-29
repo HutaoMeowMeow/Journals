@@ -33,41 +33,52 @@
   <div class="journal-page">
 
     <header class="journal-topbar">
-      <div>
+      <div class="topbar-title">
         <h1>My Journal</h1>
         <p id="welcome-text" class="welcome-text">Welcome back</p>
       </div>
-      <button id="logout-btn" class="text-link-btn">Log Out</button>
+      <div class="topbar-right">
+        <div class="postmark-badge" id="postmark-badge" title="Consecutive days you've written">
+          <svg class="postmark-rings" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="47" />
+            <circle cx="50" cy="50" r="39" />
+            <path id="postmark-arc-text" d="M 12 50 A 38 38 0 1 1 88 50" fill="none"/>
+          </svg>
+          <div class="postmark-text">
+            <span class="postmark-count" id="streak-count">0</span>
+            <span class="postmark-label">day streak</span>
+          </div>
+        </div>
+        <button id="logout-btn" class="text-link-btn">Log Out</button>
+      </div>
     </header>
 
-    <div class="journal-layout">
+    <!-- LEDGER TAB NAVIGATION -->
+    <nav class="ledger-tabs" id="ledger-tabs" role="tablist" aria-label="Journal sections">
+      <button type="button" class="ledger-tab active" data-tab="write" role="tab" aria-selected="true">
+        <span class="ledger-tab-icon">✒️</span>Write
+      </button>
+      <button type="button" class="ledger-tab" data-tab="pages" role="tab" aria-selected="false">
+        <span class="ledger-tab-icon">📖</span>Pages
+      </button>
+      <button type="button" class="ledger-tab" data-tab="favorites" role="tab" aria-selected="false">
+        <span class="ledger-tab-icon">🔖</span>Favorites
+      </button>
+      <button type="button" class="ledger-tab" data-tab="album" role="tab" aria-selected="false">
+        <span class="ledger-tab-icon">🖼️</span>Album
+      </button>
+      <button type="button" class="ledger-tab" data-tab="bin" role="tab" aria-selected="false">
+        <span class="ledger-tab-icon">🗑️</span>Bin
+      </button>
+      <button type="button" class="ledger-tab" data-tab="almanac" role="tab" aria-selected="false">
+        <span class="ledger-tab-icon">🗓️</span>Almanac
+      </button>
+    </nav>
 
-      <aside class="sidebar">
-        <div class="card calendar-card">
-          <div class="calendar-header">
-            <button id="prev-month" type="button">‹</button>
-            <span id="calendar-month-label"></span>
-            <button id="next-month" type="button">›</button>
-          </div>
-          <div class="calendar-weekdays">
-            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-          </div>
-          <div class="calendar-grid" id="calendar-grid"></div>
-          <button id="clear-date-filter" class="clear-filter-btn hidden" type="button">Show All Entries</button>
-        </div>
+    <main class="ledger-folder">
 
-        <!-- MOOD STATS WIDGET -->
-        <div class="card mood-stats-card">
-          <h3 class="mood-stats-title">Mood Summary</h3>
-          <p id="mood-stats-month" class="mood-stats-month"></p>
-          <div id="mood-stats-body">
-            <p class="no-entries">No entries yet this month.</p>
-          </div>
-        </div>
-      </aside>
-
-      <main class="main-content">
-
+      <!-- WRITE PANEL -->
+      <section class="tab-panel" id="panel-write" data-panel="write">
         <div class="card entry-form">
 
           <!-- Wax seal stamp, animates down onto the page when an entry is saved -->
@@ -91,6 +102,15 @@
               <button type="button" class="ink-dot ink-charcoal" data-ink="charcoal" title="Charcoal"></button>
               <button type="button" class="ink-dot ink-olive" data-ink="olive" title="Olive"></button>
             </div>
+            <div class="paper-picker">
+              <span class="toolbar-label">Paper:</span>
+              <select id="paper-select">
+                <option value="lined">Lined</option>
+                <option value="ledger">Ledger</option>
+                <option value="kraft">Kraft</option>
+                <option value="music">Music Sheet</option>
+              </select>
+            </div>
           </div>
 
           <textarea id="entry-text" class="paper-lined ink-sepia" placeholder="What happened today?"></textarea>
@@ -111,8 +131,18 @@
           </div>
           <div class="tag-chips" id="tag-chips"></div>
 
+          <!-- Favorite toggle for the entry currently being written/edited -->
+          <button type="button" id="favorite-toggle-btn" class="favorite-toggle-btn" aria-pressed="false">
+            <span class="ribbon-icon" aria-hidden="true"></span>
+            <span id="favorite-toggle-label">Pin this entry as a favorite</span>
+          </button>
+
           <!-- Custom photo attach control (native input hidden, paperclip-styled trigger) -->
           <div class="photo-attach">
+
+            <!-- Preview + remove control for a photo already saved on the entry being edited -->
+            <div id="current-photo-preview" class="current-photo-preview hidden"></div>
+
             <label class="photo-upload-label" for="photo-input">
               <span class="paperclip-icon" aria-hidden="true"></span>
               <span class="photo-upload-text">Clip a photo to this page</span>
@@ -126,18 +156,80 @@
             <button id="cancel-edit-btn" type="button" class="cancel-btn hidden">Cancel</button>
           </div>
         </div>
+      </section>
 
+      <!-- PAGES PANEL (all / filtered entries) -->
+      <section class="tab-panel hidden" id="panel-pages" data-panel="pages">
         <div class="search-bar">
           <input type="text" id="search-input" placeholder="🔍 Search your entries..." />
         </div>
 
+        <!-- CARD CATALOG: tag index -->
+        <div class="card-catalog" id="card-catalog">
+          <span class="catalog-label">Index:</span>
+          <div class="catalog-tags" id="catalog-tags"></div>
+        </div>
+
         <div id="filter-label" class="filter-label hidden"></div>
-
         <div id="entries-list" class="entries-list"></div>
+      </section>
 
-      </main>
+      <!-- FAVORITES PANEL -->
+      <section class="tab-panel hidden" id="panel-favorites" data-panel="favorites">
+        <p class="panel-intro">Pages you've marked with a bookmark ribbon.</p>
+        <div id="favorites-list" class="entries-list"></div>
+      </section>
 
-    </div>
+      <!-- PHOTO ALBUM PANEL: corkboard of every clipped photo -->
+      <section class="tab-panel hidden" id="panel-album" data-panel="album">
+        <p class="panel-intro">Every photo you've clipped into a page, pinned together.</p>
+        <div class="corkboard" id="corkboard"></div>
+      </section>
+
+      <!-- BIN PANEL: torn pages awaiting permanent deletion -->
+      <section class="tab-panel hidden" id="panel-bin" data-panel="bin">
+        <div class="bin-toolbar">
+          <p class="panel-intro" style="margin:0;">Torn pages are kept for 7 days before they're gone for good.</p>
+          <button type="button" id="empty-bin-btn" class="empty-bin-btn">Empty Bin</button>
+        </div>
+        <div id="bin-list" class="entries-list"></div>
+      </section>
+
+      <!-- ALMANAC PANEL (calendar + mood stats + streak ledger) -->
+      <section class="tab-panel hidden" id="panel-almanac" data-panel="almanac">
+        <div class="almanac-grid">
+
+          <div class="card calendar-card">
+            <div class="calendar-header">
+              <button id="prev-month" type="button">‹</button>
+              <span id="calendar-month-label"></span>
+              <button id="next-month" type="button">›</button>
+            </div>
+            <div class="calendar-weekdays">
+              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+            <button id="clear-date-filter" class="clear-filter-btn hidden" type="button">Show All Entries</button>
+          </div>
+
+          <div class="card mood-stats-card">
+            <h3 class="mood-stats-title">Mood Summary</h3>
+            <p id="mood-stats-month" class="mood-stats-month"></p>
+            <div id="mood-stats-body">
+              <p class="no-entries">No entries yet this month.</p>
+            </div>
+          </div>
+
+          <div class="card streak-stats-card">
+            <h3 class="mood-stats-title">Streak Ledger</h3>
+            <p class="mood-stats-month">Your writing habit, tallied</p>
+            <div id="streak-stats-body" class="streak-stats-body"></div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
   </div>
 
   <!-- ENVELOPE OVERLAY -->
