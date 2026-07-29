@@ -292,7 +292,7 @@ body:has(.auth-container) {
 /* ---------- JOURNAL PAGE ---------- */
 
 .journal-page {
-  max-width: 1200px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 30px 20px 60px;
   position: relative;
@@ -303,9 +303,10 @@ body:has(.auth-container) {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 30px;
+  margin-bottom: 22px;
   border-bottom: 2px solid #8b6f3f;
   padding-bottom: 18px;
+  gap: 16px;
 }
 
 .journal-topbar h1 {
@@ -323,7 +324,70 @@ body:has(.auth-container) {
   font-size: 13px;
 }
 
-/* Log Out is now a quiet text link, not a competing button */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+/* --- Postmark streak badge: a canceled-stamp postmark showing consecutive days --- */
+
+.postmark-badge {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-6deg);
+  cursor: default;
+}
+
+.postmark-rings {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.postmark-rings circle {
+  fill: none;
+  stroke: #6b5738;
+  stroke-width: 2;
+}
+
+.postmark-rings circle:first-child {
+  stroke-dasharray: 3 5;
+}
+
+.postmark-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  color: #6b5738;
+}
+
+.postmark-count {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 22px;
+}
+
+.postmark-label {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+  max-width: 44px;
+  text-align: center;
+}
+
+/* --- Log Out is a quiet text link, not a competing button --- */
 .text-link-btn {
   background: none;
   border: none;
@@ -345,23 +409,119 @@ body:has(.auth-container) {
   border-bottom-color: #8b3a2f;
 }
 
-.journal-layout {
+/* ---------- LEDGER TAB NAVIGATION ---------- */
+/* Styled like manila folder dividers sticking up from the folder body below them */
+
+.ledger-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.ledger-tab {
+  appearance: none;
+  border: 1px solid #a8905f;
+  border-bottom: none;
+  background: #cbb17e;
+  color: #6b5738;
+  font-family: 'Special Elite', 'Courier Prime', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 10px 18px 8px;
+  cursor: pointer;
+  clip-path: polygon(6% 0%, 94% 0%, 100% 100%, 0% 100%);
+  transform: translateY(6px);
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ledger-tab-icon {
+  font-size: 13px;
+}
+
+.ledger-tab:hover {
+  transform: translateY(2px);
+  color: #4a3c28;
+}
+
+.ledger-tab.active {
+  background: #f3e9d2;
+  color: #3a2e20;
+  border-color: #b89968;
+  transform: translateY(0);
+  z-index: 3;
+  box-shadow: 0 -2px 6px rgba(60, 45, 20, 0.08);
+}
+
+.ledger-folder {
+  background: #f3e9d2;
+  background-image: repeating-linear-gradient(
+    rgba(139, 111, 63, 0.04) 0px,
+    rgba(139, 111, 63, 0.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  border: 1px solid #b89968;
+  border-radius: 0 3px 3px 3px;
+  box-shadow:
+    0 6px 20px rgba(60, 45, 20, 0.2),
+    inset 0 0 0 1px rgba(255,255,255,0.3);
+  padding: 26px;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-panel {
+  animation: panelFadeIn 0.25s ease;
+}
+
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel-intro {
+  color: #8a7452;
+  font-style: italic;
+  font-size: 12.5px;
+  margin: 0 0 16px;
+}
+
+/* --- Almanac panel: calendar + mood stats + streak ledger side by side --- */
+
+.almanac-grid {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
   align-items: start;
 }
 
-@media (max-width: 800px) {
-  .journal-layout {
-    grid-template-columns: 1fr;
-  }
+.almanac-grid .card {
+  margin: 0;
 }
 
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+@media (max-width: 800px) {
+  .journal-topbar {
+    flex-wrap: wrap;
+  }
+  .ledger-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ledger-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .ledger-tab {
+    padding: 10px 14px 8px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
 }
 
 .card {
@@ -567,10 +727,44 @@ body:has(.auth-container) {
   font-family: 'Playfair Display', serif;
 }
 
+/* --- Streak ledger: dot-leader table like a table of contents --- */
+
+.streak-stats-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.streak-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 0;
+  font-size: 12.5px;
+  color: #4a3c28;
+  border-bottom: 1px dotted #b8a06e;
+}
+
+.streak-stat-row:last-child {
+  border-bottom: none;
+}
+
+.streak-stat-row span:first-child {
+  color: #6b5738;
+  font-style: italic;
+}
+
+.streak-stat-row span:last-child {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: #3a2e20;
+}
+
 /* --- Entry form --- */
 
 .entry-form {
-  margin-bottom: 20px;
+  margin-bottom: 0;
   position: relative;
   overflow: hidden;
 }
@@ -820,6 +1014,87 @@ body:has(.auth-container) {
   box-shadow:
     inset 0 2px 4px rgba(0,0,0,0.35),
     0 0 0 2px rgba(139,58,47,0.35);
+}
+
+/* --- Tag chips (card catalog input) --- */
+
+.tag-input-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px dashed #a8905f;
+  margin-bottom: 8px;
+}
+
+.tag-input-row input {
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 8px 4px;
+  font-size: 12px;
+  width: 100%;
+  color: #3a2e20;
+  font-family: 'Courier Prime', monospace;
+}
+
+.tag-input-row input::placeholder {
+  color: #a89877;
+  font-style: italic;
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+/* --- Favorite toggle button (used in the write form) --- */
+
+.favorite-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: 1px dashed #a8905f;
+  border-radius: 2px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #6b5738;
+  font-style: italic;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.favorite-toggle-btn:hover {
+  background: rgba(139, 111, 63, 0.08);
+}
+
+.favorite-toggle-btn.active {
+  border-style: solid;
+  border-color: #8b3a2f;
+  color: #8b3a2f;
+  font-style: normal;
+  font-weight: 700;
+  background: rgba(139, 58, 47, 0.06);
+}
+
+/* --- Ribbon icon: shared between the write-form toggle and entry pin buttons --- */
+
+.ribbon-icon {
+  display: inline-block;
+  width: 11px;
+  height: 15px;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='30'><path d='M2 2 L20 2 L20 28 L11 21 L2 28 Z' fill='none' stroke='%236b5738' stroke-width='2.4' stroke-linejoin='round'/></svg>");
+}
+
+.favorite-toggle-btn.active .ribbon-icon,
+.pin-btn.active .ribbon-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='30'><path d='M2 2 L20 2 L20 28 L11 21 L2 28 Z' fill='%238b3a2f' stroke='%238b3a2f' stroke-width='2.4' stroke-linejoin='round'/></svg>");
 }
 
 /* --- Custom photo attach (paperclip trigger, native input hidden) --- */
@@ -1083,6 +1358,25 @@ body:has(.auth-container) {
   transform: translateX(4px);
 }
 
+/* --- Favorite ribbon: a folded flag tucked into the top-right corner of a pinned entry --- */
+
+.entry.favorited::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 18px;
+  width: 22px;
+  height: 34px;
+  background: linear-gradient(180deg, #a8453a, #7a2e21);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  z-index: 3;
+}
+
+.entry.catalog-style.favorited::after {
+  right: 14px;
+}
+
 .entry-top {
   display: flex;
   justify-content: space-between;
@@ -1200,6 +1494,7 @@ body:has(.auth-container) {
 
 .entry-actions {
   display: flex;
+  align-items: center;
   gap: 16px;
   border-top: 1px dashed #b8a06e;
   padding-top: 10px;
@@ -1216,10 +1511,22 @@ body:has(.auth-container) {
   letter-spacing: 0.5px;
   text-transform: uppercase;
   transition: opacity 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .entry-actions button:hover {
   opacity: 0.75;
+}
+
+/* Pin: ribbon toggle for favorites */
+.pin-btn {
+  color: #6b5738;
+}
+
+.pin-btn.active {
+  color: #8b3a2f;
 }
 
 /* Edit: pencil icon + handwritten blue-ink label, with a scribbled underline on hover */
@@ -1230,9 +1537,6 @@ body:has(.auth-container) {
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
   position: relative;
   padding-bottom: 2px;
 }
@@ -1274,9 +1578,6 @@ body:has(.auth-container) {
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
   text-decoration: line-through wavy #8b3a2f 2px;
 }
 
@@ -1787,4 +2088,282 @@ body:has(.auth-container) {
     flex-direction: column;
     align-items: flex-start;
   }
+  .topbar-right {
+    gap: 10px;
+  }
+  .postmark-badge {
+    width: 54px;
+    height: 54px;
+  }
+  .postmark-count {
+    font-size: 18px;
+  }
+}
+
+/* ================================================================
+   APPEND THE RULES BELOW TO THE END OF YOUR EXISTING style.css
+   (Album corkboard + Bin panel styling — nothing above needs to change)
+   ================================================================ */
+
+/* --- Album: corkboard of clipped photos --- */
+
+.corkboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 30px 22px;
+  padding: 14px 6px 6px;
+}
+
+.cork-photo {
+  position: relative;
+  background: #fff;
+  padding: 8px 8px 26px;
+  box-shadow: 0 4px 10px rgba(60, 45, 20, 0.28);
+  transform: rotate(var(--cork-rotate, -2deg));
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cork-photo:nth-child(odd)  { --cork-rotate: -2.5deg; }
+.cork-photo:nth-child(even) { --cork-rotate: 2deg; }
+.cork-photo:nth-child(3n)   { --cork-rotate: -1deg; }
+
+.cork-photo:hover {
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow: 0 10px 20px rgba(60, 45, 20, 0.32);
+  z-index: 2;
+}
+
+.cork-photo img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
+.cork-pin {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c9564a, #7a2e21);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+.cork-caption {
+  font-family: 'Caveat', cursive;
+  font-size: 14px;
+  color: #4a3c28;
+  text-align: center;
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- Bin: toolbar + retention countdown + restore action --- */
+
+.bin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.empty-bin-btn {
+  background: transparent;
+  border: 1px dashed #8b3a2f;
+  color: #8b3a2f;
+  padding: 8px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-family: 'Special Elite', 'Courier Prime', monospace;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.empty-bin-btn:hover {
+  background: rgba(139, 58, 47, 0.08);
+}
+
+.empty-bin-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.bin-days-left {
+  font-size: 11px;
+  color: #a89877;
+  font-style: italic;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Restore button, styled to sit alongside the existing edit/delete look */
+.restore-btn {
+  color: #4d5c3a;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: opacity 0.15s ease;
+}
+
+.restore-btn:hover {
+  opacity: 0.75;
+}
+
+.restore-btn::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path d='M3 12 a9 9 0 1 0 3 -6.7 M3 4 v5 h5' fill='none' stroke='%234d5c3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+
+.bin-entry .delete-btn {
+  font-size: 11px;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-family: 'Special Elite', 'Courier Prime', monospace;
+  letter-spacing: 0.5px;
+}
+
+.bin-entry .delete-btn::before {
+  width: 12px;
+  height: 12px;
+}
+
+/* --- Per-photo delete: small × button on a photo-frame (entry cards) --- */
+
+.remove-photo-btn {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #8b3a2f;
+  background: #f3e9d2;
+  color: #8b3a2f;
+  font-size: 15px;
+  line-height: 1;
+  font-family: 'Courier Prime', monospace;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.photo-frame:hover .remove-photo-btn,
+.remove-photo-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.remove-photo-btn:hover {
+  background: #8b3a2f;
+  color: #f3e9d2;
+}
+
+/* --- Per-photo delete: same × button, adapted for the corkboard --- */
+
+.cork-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #8b3a2f;
+  background: #f3e9d2;
+  color: #8b3a2f;
+  font-size: 14px;
+  line-height: 1;
+  font-family: 'Courier Prime', monospace;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.cork-photo:hover .cork-remove-btn,
+.cork-remove-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cork-remove-btn:hover {
+  background: #8b3a2f;
+  color: #f3e9d2;
+}
+
+/* --- Current-photo preview shown in the Write form while editing an entry --- */
+
+.current-photo-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px dashed #a8905f;
+  border-radius: 3px;
+  background: rgba(139, 111, 63, 0.05);
+}
+
+.current-photo-preview img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.remove-current-photo-btn {
+  background: transparent;
+  border: 1px dashed #8b3a2f;
+  color: #8b3a2f;
+  padding: 7px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-family: 'Special Elite', 'Courier Prime', monospace;
+  transition: background 0.15s ease;
+}
+
+.remove-current-photo-btn:hover {
+  background: rgba(139, 58, 47, 0.1);
 }
