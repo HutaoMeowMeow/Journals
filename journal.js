@@ -9,6 +9,7 @@ import {
   orderBy,
   onSnapshot,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   serverTimestamp
@@ -17,6 +18,7 @@ import {
 // Elements
 const welcomeText = document.getElementById("welcome-text");
 const entriesList = document.getElementById("entries-list");
+const favoritesList = document.getElementById("favorites-list");
 const entryTitle = document.getElementById("entry-title");
 const entryText = document.getElementById("entry-text");
 const addEntryBtn = document.getElementById("add-entry-btn");
@@ -32,11 +34,17 @@ const prevMonthBtn = document.getElementById("prev-month");
 const nextMonthBtn = document.getElementById("next-month");
 const photoInput = document.getElementById("photo-input");
 const photoFilename = document.getElementById("photo-filename");
+const currentPhotoPreview = document.getElementById("current-photo-preview");
 const inkPicker = document.getElementById("ink-picker");
+const paperSelect = document.getElementById("paper-select");
 const waxSealStamp = document.getElementById("wax-seal-stamp");
+const favoriteToggleBtn = document.getElementById("favorite-toggle-btn");
+const favoriteToggleLabel = document.getElementById("favorite-toggle-label");
 
 const moodStatsMonth = document.getElementById("mood-stats-month");
 const moodStatsBody = document.getElementById("mood-stats-body");
+const streakCountEl = document.getElementById("streak-count");
+const streakStatsBody = document.getElementById("streak-stats-body");
 
 const envelopeOverlay = document.getElementById("envelope-overlay");
 const envelope = document.getElementById("envelope");
@@ -48,6 +56,18 @@ const photoLightboxImg = document.getElementById("photo-lightbox-img");
 
 const toastContainer = document.getElementById("toast-container");
 
+const ledgerTabs = document.getElementById("ledger-tabs");
+const tabButtons = Array.from(document.querySelectorAll(".ledger-tab"));
+const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+
+// Album + Bin elements
+const corkboard = document.getElementById("corkboard");
+const binList = document.getElementById("bin-list");
+const emptyBinBtn = document.getElementById("empty-bin-btn");
+
+const BIN_RETENTION_DAYS = 7;
+const BIN_RETENTION_MS = BIN_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
 let currentUserId = null;
 let allEntries = [];
 let selectedMood = null;
@@ -57,6 +77,11 @@ let editingEntryId = null;
 let selectedPhotoFile = null;
 let selectedInk = "sepia";
 let selectedPaper = "lined";
+let selectedFavorite = false;
+let activeTab = "write";
+let isPurging = false;
+let currentEntryPhotoURL = null; // photo already saved on the entry being edited
+let removeExistingPhoto = false;  // true when the user removed that saved photo
 
 // Expanded vintage/nude ink palette
 const INK_LABELS = {
@@ -80,6 +105,50 @@ function removeInkClasses(el) {
     if (cls.startsWith("ink-")) el.classList.remove(cls);
   });
 }
+
+function removePaperClasses(el) {
+  Array.from(el.classList).forEach((cls) => {
+    if (cls.startsWith("paper-")) el.classList.remove(cls);
+  });
+}
+
+// Entries that are NOT sitting in the bin — used for everything except the Bin panel
+function activeEntries() {
+  return allEntries.filter((e) => !e.deleted);
+}
+
+function binnedEntries() {
+  return allEntries.filter((e) => e.deleted);
+}
+
+// ---------- TAB NAVIGATION ----------
+function switchTab(tabName) {
+  activeTab = tabName;
+
+  tabButtons.forEach((btn) => {
+    const isActive = btn.dataset.tab === tabName;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  tabPanels.forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.panel !== tabName);
+  });
+
+  if (tabName === "pages") renderEntries();
+  if (tabName === "favorites") renderFavorites();
+  if (tabName === "album") renderAlbum();
+  if (tabName === "bin") renderBin();
+  if (tabName === "almanac") {
+    renderCalendar();
+    renderMoodStats();
+    renderStreakStats();
+  }
+}
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
 
 // ---------- AUTH GUARD ----------
 onAuthStateChanged(auth, async (user) => {
@@ -122,13 +191,69 @@ inkPicker.querySelectorAll(".ink-dot").forEach((btn) => {
   });
 });
 
+// ---------- PAPER PICKER ----------
+paperSelect.addEventListener("change", () => {
+  selectedPaper = paperSelect.value;
+  removePaperClasses(entryText);
+  entryText.classList.add(`paper-${selectedPaper}`);
+});
+// Set initial paper class to match default dropdown value
+entryText.classList.add(`paper-${selectedPaper}`);
+
+// ---------- FAVORITE TOGGLE (for the entry being written/edited) ----------
+favoriteToggleBtn.addEventListener("click", () => {
+  selectedFavorite = !selectedFavorite;
+  updateFavoriteToggleUI();
+});
+
+function updateFavoriteToggleUI() {
+  favoriteToggleBtn.classList.toggle("active", selectedFavorite);
+  favoriteToggleBtn.setAttribute("aria-pressed", selectedFavorite ? "true" : "false");
+  favoriteToggleLabel.textContent = selectedFavorite
+    ? "Pinned as a favorite"
+    : "Pin this entry as a favorite";
+}
+
 // ---------- PHOTO INPUT ----------
 const MAX_PHOTO_BYTES = 700 * 1024; // stay safely under Firestore's 1MB doc limit
 
 photoInput.addEventListener("change", () => {
   selectedPhotoFile = photoInput.files[0] || null;
   photoFilename.textContent = selectedPhotoFile ? `Clipped: ${selectedPhotoFile.name}` : "";
+  // Picking a new file supersedes any "removed" state from the old photo
+  if (selectedPhotoFile) removeExistingPhoto = false;
 });
+
+// Shows the photo already saved on the entry currently being edited, with a way to remove it
+function renderCurrentPhotoPreview() {
+  if (!currentEntryPhotoURL) {
+    currentPhotoPreview.classList.add("hidden");
+    currentPhotoPreview.innerHTML = "";
+    return;
+  }
+  currentPhotoPreview.classList.remove("hidden");
+  currentPhotoPreview.innerHTML = `
+    <img src="${currentEntryPhotoURL}" alt="Current photo" />
+    <button type="button" id="remove-current-photo-btn" class="remove-current-photo-btn">
+      Remove this photo
+    </button>
+  `;
+  document.getElementById("remove-current-photo-btn").addEventListener("click", () => {
+    currentEntryPhotoURL = null;
+    removeExistingPhoto = true;
+    renderCurrentPhotoPreview();
+  });
+}
+
+// Deletes just the photo from a saved entry (used from entry cards and the Album)
+async function removePhotoFromEntry(entryId) {
+  try {
+    await updateDoc(doc(db, "entries", entryId), { photoURL: deleteField() });
+    showToast("Photo removed", "success");
+  } catch (error) {
+    showToast("Could not remove photo: " + error.message, "error");
+  }
+}
 
 // Resizes + compresses an image file, returns a base64 data URL string
 function fileToCompressedBase64(file, maxWidth = 800, quality = 0.7) {
@@ -204,6 +329,21 @@ function resetForm() {
   inkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.toggle("selected", b.dataset.ink === "sepia"));
   removeInkClasses(entryText);
   entryText.classList.add("ink-sepia");
+
+  // Reset paper back to default
+  selectedPaper = "lined";
+  paperSelect.value = "lined";
+  removePaperClasses(entryText);
+  entryText.classList.add("paper-lined");
+
+  // Reset favorite toggle
+  selectedFavorite = false;
+  updateFavoriteToggleUI();
+
+  // Reset current-photo preview state
+  currentEntryPhotoURL = null;
+  removeExistingPhoto = false;
+  renderCurrentPhotoPreview();
 }
 
 // ---------- TOAST ----------
@@ -258,9 +398,14 @@ addEntryBtn.addEventListener("click", async () => {
         mood: selectedMood || "😐",
         inkColor: selectedInk,
         paper: selectedPaper,
+        favorite: selectedFavorite,
         updatedAt: serverTimestamp()
       };
-      if (photoURL) updateData.photoURL = photoURL;
+      if (photoURL) {
+        updateData.photoURL = photoURL;
+      } else if (removeExistingPhoto) {
+        updateData.photoURL = deleteField();
+      }
 
       await updateDoc(doc(db, "entries", editingEntryId), updateData);
       showToast("Entry updated!", "success");
@@ -273,6 +418,8 @@ addEntryBtn.addEventListener("click", async () => {
         mood: selectedMood || "😐",
         inkColor: selectedInk,
         paper: selectedPaper,
+        favorite: selectedFavorite,
+        deleted: false,
         userId: currentUserId,
         dateKey: toDateKey(now),
         createdAt: serverTimestamp()
@@ -313,27 +460,252 @@ function loadEntries() {
       ...docSnap.data()
     }));
     renderCalendar();
-    renderEntries();
+    if (activeTab === "pages") renderEntries();
+    if (activeTab === "favorites") renderFavorites();
+    if (activeTab === "album") renderAlbum();
+    if (activeTab === "bin") renderBin();
     renderMoodStats();
+    renderStreakStats();
+    updateStreakBadge();
+    purgeExpiredBinEntries();
   }, (error) => {
     console.error("onSnapshot error:", error);
   });
 }
 
-// ---------- RENDER ENTRIES ----------
+// ---------- BUILD A SINGLE ENTRY CARD ----------
+function buildEntryCard(entry, { catalogStyle = false } = {}) {
+  const date = entry.createdAt
+    ? entry.createdAt.toDate().toLocaleString()
+    : "Just now";
+
+  const ink = entry.inkColor || "sepia";
+  const isFavorite = !!entry.favorite;
+
+  const photoHtml = entry.photoURL
+    ? `
+      <div class="photo-frame">
+        <div class="washi-tape tape-left"></div>
+        <div class="washi-tape tape-right"></div>
+        <button type="button" class="remove-photo-btn" data-id="${entry.id}" title="Remove this photo">×</button>
+        <img class="attached-photo" src="${entry.photoURL}" alt="Journal photo" />
+        <div class="photo-caption">${entry.title || "Untitled Entry"}</div>
+      </div>
+    `
+    : "";
+
+  const entryEl = document.createElement("div");
+  entryEl.className = `entry${catalogStyle ? " catalog-style" : ""}${isFavorite ? " favorited" : ""}`;
+  entryEl.innerHTML = `
+    <div class="entry-top">
+      <div class="entry-title-row">
+        <span class="entry-mood">${entry.mood || "😐"}</span>
+        <span class="entry-title">${entry.title || "Untitled Entry"}</span>
+      </div>
+    </div>
+    ${photoHtml}
+    <p class="entry-text ink-${ink}">${entry.text}</p>
+    <div class="entry-meta-row">
+      <p class="entry-date">${date}</p>
+    </div>
+    <div class="entry-actions">
+      <button class="pin-btn${isFavorite ? " active" : ""}" data-id="${entry.id}" title="${isFavorite ? "Remove from favorites" : "Pin as favorite"}">
+        <span class="ribbon-icon" aria-hidden="true"></span>${isFavorite ? "Pinned" : "Pin"}
+      </button>
+      <button class="edit-btn" data-id="${entry.id}">Edit</button>
+      <button class="delete-btn" data-id="${entry.id}" title="Move to bin">Bin</button>
+    </div>
+  `;
+
+  entryEl.querySelector(".attached-photo")?.addEventListener("click", (e) => {
+    openPhotoLightbox(e.target.src);
+  });
+
+  entryEl.querySelector(".remove-photo-btn")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (confirm("Remove this photo? The entry text will stay.")) {
+      await removePhotoFromEntry(entry.id);
+      // Keep the write form's preview in sync if this is the entry being edited
+      if (editingEntryId === entry.id) {
+        currentEntryPhotoURL = null;
+        removeExistingPhoto = false;
+        renderCurrentPhotoPreview();
+      }
+    }
+  });
+
+  entryEl.querySelector(".pin-btn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await updateDoc(doc(db, "entries", entry.id), { favorite: !isFavorite });
+      showToast(!isFavorite ? "Pinned to favorites!" : "Unpinned", "success");
+    } catch (error) {
+      showToast("Could not update: " + error.message, "error");
+      btn.disabled = false;
+    }
+  });
+
+  entryEl.querySelector(".edit-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    startEditingEntry(entry);
+  });
+
+  // "Delete" now moves the entry to the Bin instead of destroying it right away
+  entryEl.querySelector(".delete-btn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (confirm("Move this entry to the bin? You can restore it within 7 days.")) {
+      try {
+        await updateDoc(doc(db, "entries", entry.id), {
+          deleted: true,
+          deletedAt: serverTimestamp()
+        });
+        showToast("Entry moved to bin", "success");
+        if (editingEntryId === entry.id) resetForm();
+      } catch (error) {
+        showToast("Could not move to bin: " + error.message, "error");
+      }
+    }
+  });
+
+  return entryEl;
+}
+
+function startEditingEntry(entry) {
+  entryTitle.value = entry.title === "Untitled Entry" ? "" : entry.title;
+  entryText.value = entry.text;
+  moodPicker.querySelectorAll(".mood-btn").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.mood === entry.mood);
+  });
+  selectedMood = entry.mood;
+
+  // Restore ink + paper style used for this entry
+  selectedInk = entry.inkColor || "sepia";
+  selectedPaper = entry.paper || "lined";
+  inkPicker.querySelectorAll(".ink-dot").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.ink === selectedInk);
+  });
+  paperSelect.value = selectedPaper;
+  removeInkClasses(entryText);
+  removePaperClasses(entryText);
+  entryText.classList.add(`ink-${selectedInk}`, `paper-${selectedPaper}`);
+
+  // Restore favorite state
+  selectedFavorite = !!entry.favorite;
+  updateFavoriteToggleUI();
+
+  // Show the entry's existing photo (if any) with a remove option
+  currentEntryPhotoURL = entry.photoURL || null;
+  removeExistingPhoto = false;
+  renderCurrentPhotoPreview();
+
+  editingEntryId = entry.id;
+  addEntryBtn.textContent = "Save Changes";
+  cancelEditBtn.classList.remove("hidden");
+
+  switchTab("write");
+  requestAnimationFrame(() => {
+    document.querySelector(".entry-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
+// ---------- BUILD A BIN CARD (restore / delete forever) ----------
+function buildBinCard(entry) {
+  const date = entry.createdAt
+    ? entry.createdAt.toDate().toLocaleString()
+    : "Just now";
+
+  const ink = entry.inkColor || "sepia";
+
+  let daysLeftText = "";
+  if (entry.deletedAt && typeof entry.deletedAt.toDate === "function") {
+    const deletedTime = entry.deletedAt.toDate().getTime();
+    const msLeft = BIN_RETENTION_MS - (Date.now() - deletedTime);
+    const daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
+    daysLeftText = daysLeft > 0
+      ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
+      : "Purging soon";
+  }
+
+  const photoHtml = entry.photoURL
+    ? `
+      <div class="photo-frame">
+        <div class="washi-tape tape-left"></div>
+        <div class="washi-tape tape-right"></div>
+        <img class="attached-photo" src="${entry.photoURL}" alt="Journal photo" />
+        <div class="photo-caption">${entry.title || "Untitled Entry"}</div>
+      </div>
+    `
+    : "";
+
+  const entryEl = document.createElement("div");
+  entryEl.className = "entry catalog-style bin-entry";
+  entryEl.innerHTML = `
+    <div class="entry-top">
+      <div class="entry-title-row">
+        <span class="entry-mood">${entry.mood || "😐"}</span>
+        <span class="entry-title">${entry.title || "Untitled Entry"}</span>
+      </div>
+    </div>
+    ${photoHtml}
+    <p class="entry-text ink-${ink}">${entry.text}</p>
+    <div class="entry-meta-row">
+      <p class="entry-date">${date}</p>
+      <p class="bin-days-left">${daysLeftText}</p>
+    </div>
+    <div class="entry-actions">
+      <button class="restore-btn" data-id="${entry.id}">Restore</button>
+      <button class="delete-btn" data-id="${entry.id}" title="Delete forever">Delete Forever</button>
+    </div>
+  `;
+
+  entryEl.querySelector(".attached-photo")?.addEventListener("click", (e) => {
+    openPhotoLightbox(e.target.src);
+  });
+
+  entryEl.querySelector(".restore-btn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await updateDoc(doc(db, "entries", entry.id), { deleted: false, deletedAt: null });
+      showToast("Entry restored", "success");
+    } catch (error) {
+      showToast("Could not restore: " + error.message, "error");
+      btn.disabled = false;
+    }
+  });
+
+  entryEl.querySelector(".delete-btn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (confirm("Permanently delete this entry? This cannot be undone.")) {
+      try {
+        await deleteDoc(doc(db, "entries", entry.id));
+        showToast("Entry permanently deleted", "success");
+      } catch (error) {
+        showToast("Could not delete: " + error.message, "error");
+      }
+    }
+  });
+
+  return entryEl;
+}
+
+// ---------- RENDER ENTRIES (Pages tab) ----------
 function renderEntries() {
   const searchTerm = searchInput.value.trim().toLowerCase();
   const isSearching = searchTerm.length > 0;
 
   // Don't show anything until the user picks a date on the calendar (or searches)
   if (!selectedDateFilter && !isSearching) {
-    entriesList.innerHTML = `<p class="no-entries">Select a date on the calendar to view your entries.</p>`;
+    entriesList.innerHTML = `<p class="no-entries">Select a date from the Almanac, or search, to view your pages.</p>`;
     filterLabel.classList.add("hidden");
     clearDateFilterBtn.classList.add("hidden");
     return;
   }
 
-  let filtered = allEntries;
+  let filtered = activeEntries();
 
   if (selectedDateFilter) {
     filtered = filtered.filter((e) => e.dateKey === selectedDateFilter);
@@ -364,97 +736,131 @@ function renderEntries() {
   }
 
   filtered.forEach((entry) => {
-    const date = entry.createdAt
-      ? entry.createdAt.toDate().toLocaleString()
-      : "Just now";
+    entriesList.appendChild(buildEntryCard(entry, { catalogStyle: isSearching }));
+  });
+}
 
-    const ink = entry.inkColor || "sepia";
+// ---------- RENDER FAVORITES (Favorites tab) ----------
+function renderFavorites() {
+  const favorites = activeEntries().filter((e) => e.favorite);
 
-    const photoHtml = entry.photoURL
-      ? `
-        <div class="photo-frame">
-          <div class="washi-tape tape-left"></div>
-          <div class="washi-tape tape-right"></div>
-          <img class="attached-photo" src="${entry.photoURL}" alt="Journal photo" />
-          <div class="photo-caption">${entry.title || "Untitled Entry"}</div>
-        </div>
-      `
+  favoritesList.innerHTML = "";
+
+  if (favorites.length === 0) {
+    favoritesList.innerHTML = `<p class="no-entries">No favorites yet. Pin an entry to keep it close at hand.</p>`;
+    return;
+  }
+
+  favorites.forEach((entry) => {
+    favoritesList.appendChild(buildEntryCard(entry));
+  });
+}
+
+// ---------- RENDER ALBUM (Album tab) ----------
+function renderAlbum() {
+  const photoEntries = activeEntries()
+    .filter((e) => !!e.photoURL)
+    .sort((a, b) => {
+      const at = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const bt = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return bt - at;
+    });
+
+  corkboard.innerHTML = "";
+
+  if (photoEntries.length === 0) {
+    corkboard.innerHTML = `<p class="no-entries">No photos clipped yet. Attach one from the Write tab.</p>`;
+    return;
+  }
+
+  photoEntries.forEach((entry) => {
+    const dateStr = entry.createdAt?.toDate
+      ? entry.createdAt.toDate().toLocaleDateString()
       : "";
 
-    const entryEl = document.createElement("div");
-    entryEl.className = `entry${isSearching ? " catalog-style" : ""}`;
-    entryEl.innerHTML = `
-      <div class="entry-top">
-        <div class="entry-title-row">
-          <span class="entry-mood">${entry.mood || "😐"}</span>
-          <span class="entry-title">${entry.title || "Untitled Entry"}</span>
-        </div>
-      </div>
-      ${photoHtml}
-      <p class="entry-text ink-${ink}">${entry.text}</p>
-      <div class="entry-meta-row">
-        <p class="entry-date">${date}</p>
-      </div>
-      <div class="entry-actions">
-        <button class="edit-btn" data-id="${entry.id}">Edit</button>
-        <button class="delete-btn" data-id="${entry.id}">Delete</button>
-      </div>
+    const card = document.createElement("div");
+    card.className = "cork-photo";
+    card.innerHTML = `
+      <span class="cork-pin" aria-hidden="true"></span>
+      <button type="button" class="cork-remove-btn" data-id="${entry.id}" title="Remove this photo">×</button>
+      <img src="${entry.photoURL}" alt="${entry.title || "Journal photo"}" />
+      <p class="cork-caption">${entry.title || "Untitled Entry"}${dateStr ? ` · ${dateStr}` : ""}</p>
     `;
-    entriesList.appendChild(entryEl);
-  });
-
-  document.querySelectorAll(".attached-photo").forEach((img) => {
-    img.addEventListener("click", () => {
-      openPhotoLightbox(img.src);
-    });
-  });
-
-  document.querySelectorAll(".edit-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+    card.querySelector("img").addEventListener("click", () => openPhotoLightbox(entry.photoURL));
+    card.querySelector(".cork-remove-btn").addEventListener("click", async (e) => {
       e.stopPropagation();
-      const entry = allEntries.find((en) => en.id === btn.dataset.id);
-      if (!entry) return;
-
-      entryTitle.value = entry.title === "Untitled Entry" ? "" : entry.title;
-      entryText.value = entry.text;
-      moodPicker.querySelectorAll(".mood-btn").forEach((b) => {
-        b.classList.toggle("selected", b.dataset.mood === entry.mood);
-      });
-      selectedMood = entry.mood;
-
-      // Restore ink + paper style used for this entry
-      selectedInk = entry.inkColor || "sepia";
-      selectedPaper = entry.paper || "lined";
-      inkPicker.querySelectorAll(".ink-dot").forEach((b) => {
-        b.classList.toggle("selected", b.dataset.ink === selectedInk);
-      });
-      removeInkClasses(entryText);
-      entryText.classList.remove("paper-lined", "paper-ledger", "paper-kraft", "paper-music");
-      entryText.classList.add(`ink-${selectedInk}`, `paper-${selectedPaper}`);
-
-      editingEntryId = entry.id;
-      addEntryBtn.textContent = "Save Changes";
-      cancelEditBtn.classList.remove("hidden");
-
-      document.querySelector(".entry-form").scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  });
-
-  document.querySelectorAll(".delete-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (confirm("Delete this entry?")) {
-        try {
-          await deleteDoc(doc(db, "entries", btn.dataset.id));
-          showToast("Entry deleted", "success");
-          if (editingEntryId === btn.dataset.id) resetForm();
-        } catch (error) {
-          showToast("Could not delete: " + error.message, "error");
+      if (confirm("Remove this photo from its journal entry?")) {
+        await removePhotoFromEntry(entry.id);
+        if (editingEntryId === entry.id) {
+          currentEntryPhotoURL = null;
+          removeExistingPhoto = false;
+          renderCurrentPhotoPreview();
         }
       }
     });
+    corkboard.appendChild(card);
   });
 }
+
+// ---------- RENDER BIN (Bin tab) ----------
+function renderBin() {
+  const binned = binnedEntries();
+
+  binList.innerHTML = "";
+
+  if (binned.length === 0) {
+    binList.innerHTML = `<p class="no-entries">The bin is empty.</p>`;
+    return;
+  }
+
+  binned.forEach((entry) => {
+    binList.appendChild(buildBinCard(entry));
+  });
+}
+
+// Permanently removes entries that have been sitting in the bin longer than the retention window
+async function purgeExpiredBinEntries() {
+  if (isPurging) return;
+
+  const expired = allEntries.filter((e) => {
+    if (!e.deleted || !e.deletedAt || typeof e.deletedAt.toDate !== "function") return false;
+    return (Date.now() - e.deletedAt.toDate().getTime()) > BIN_RETENTION_MS;
+  });
+
+  if (expired.length === 0) return;
+
+  isPurging = true;
+  try {
+    await Promise.all(expired.map((entry) => deleteDoc(doc(db, "entries", entry.id))));
+  } catch (error) {
+    console.error("Could not auto-purge expired bin entries:", error);
+  } finally {
+    isPurging = false;
+  }
+}
+
+// ---------- EMPTY BIN ----------
+emptyBinBtn.addEventListener("click", async () => {
+  const binned = binnedEntries();
+  if (binned.length === 0) {
+    showToast("The bin is already empty", "success");
+    return;
+  }
+
+  if (!confirm(`Permanently delete all ${binned.length} entr${binned.length === 1 ? "y" : "ies"} in the bin? This cannot be undone.`)) {
+    return;
+  }
+
+  emptyBinBtn.disabled = true;
+  try {
+    await Promise.all(binned.map((entry) => deleteDoc(doc(db, "entries", entry.id))));
+    showToast("Bin emptied", "success");
+  } catch (error) {
+    showToast("Could not empty bin: " + error.message, "error");
+  } finally {
+    emptyBinBtn.disabled = false;
+  }
+});
 
 // ---------- SEARCH ----------
 searchInput.addEventListener("input", renderEntries);
@@ -472,7 +878,7 @@ function renderCalendar() {
   const startWeekday = firstDayOfMonth.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const datesWithEntries = new Set(allEntries.map((e) => e.dateKey));
+  const datesWithEntries = new Set(activeEntries().map((e) => e.dateKey));
   const todayKey = toDateKey(new Date());
 
   calendarGrid.innerHTML = "";
@@ -499,10 +905,15 @@ function renderCalendar() {
     cell.addEventListener("click", () => {
       selectedDateFilter = selectedDateFilter === dateKey ? null : dateKey;
       renderCalendar();
-      renderEntries();
 
       if (hasEntry && selectedDateFilter === dateKey) {
         openEnvelope(dateKey);
+      }
+
+      if (selectedDateFilter) {
+        switchTab("pages");
+      } else {
+        renderEntries();
       }
     });
 
@@ -537,7 +948,7 @@ function renderMoodStats() {
     month: "long", year: "numeric"
   });
 
-  const monthEntries = allEntries.filter((entry) => {
+  const monthEntries = activeEntries().filter((entry) => {
     if (!entry.dateKey) return false;
     const [entryYear, entryMonth] = entry.dateKey.split("-").map(Number);
     return entryYear === year && (entryMonth - 1) === month;
@@ -583,9 +994,78 @@ function renderMoodStats() {
   moodStatsBody.innerHTML = html;
 }
 
+// ---------- STREAK TRACKER ----------
+function computeCurrentStreak(dateKeySet) {
+  const cursor = new Date();
+  let key = toDateKey(cursor);
+
+  if (!dateKeySet.has(key)) {
+    cursor.setDate(cursor.getDate() - 1);
+    key = toDateKey(cursor);
+    if (!dateKeySet.has(key)) return 0;
+  }
+
+  let streak = 0;
+  while (dateKeySet.has(toDateKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function computeLongestStreak(dateKeySet) {
+  if (dateKeySet.size === 0) return 0;
+
+  const sortedDates = Array.from(dateKeySet)
+    .map((key) => {
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    })
+    .sort((a, b) => a - b);
+
+  let longest = 1;
+  let current = 1;
+
+  for (let i = 1; i < sortedDates.length; i++) {
+    const diffDays = Math.round((sortedDates[i] - sortedDates[i - 1]) / 86400000);
+    if (diffDays === 1) {
+      current++;
+    } else if (diffDays > 1) {
+      current = 1;
+    }
+    longest = Math.max(longest, current);
+  }
+
+  return longest;
+}
+
+function updateStreakBadge() {
+  const dateKeySet = new Set(activeEntries().map((e) => e.dateKey).filter(Boolean));
+  const streak = computeCurrentStreak(dateKeySet);
+  streakCountEl.textContent = streak;
+}
+
+function renderStreakStats() {
+  const active = activeEntries();
+  const dateKeySet = new Set(active.map((e) => e.dateKey).filter(Boolean));
+  const currentStreak = computeCurrentStreak(dateKeySet);
+  const longestStreak = computeLongestStreak(dateKeySet);
+  const totalEntries = active.length;
+  const totalFavorites = active.filter((e) => e.favorite).length;
+  const totalDaysWritten = dateKeySet.size;
+
+  streakStatsBody.innerHTML = `
+    <div class="streak-stat-row"><span>Current streak</span><span>${currentStreak} day${currentStreak === 1 ? "" : "s"}</span></div>
+    <div class="streak-stat-row"><span>Longest streak</span><span>${longestStreak} day${longestStreak === 1 ? "" : "s"}</span></div>
+    <div class="streak-stat-row"><span>Days written</span><span>${totalDaysWritten}</span></div>
+    <div class="streak-stat-row"><span>Total pages</span><span>${totalEntries}</span></div>
+    <div class="streak-stat-row"><span>Favorites pinned</span><span>${totalFavorites}</span></div>
+  `;
+}
+
 // ---------- ENVELOPE ----------
 function openEnvelope(dateKey) {
-  const entriesForDay = allEntries.filter((e) => e.dateKey === dateKey);
+  const entriesForDay = activeEntries().filter((e) => e.dateKey === dateKey);
   if (entriesForDay.length === 0) return;
 
   letterDate.textContent = dateKeyToNiceString(dateKey);
