@@ -2,6 +2,7 @@ import { auth, db } from "./firebase-config.js";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -19,6 +20,7 @@ const loginForm = document.getElementById("login-form");
 const signupForm = document.getElementById("signup-form");
 const showSignup = document.getElementById("show-signup");
 const showLogin = document.getElementById("show-login");
+const forgotPasswordLink = document.getElementById("forgot-password-link");
 
 // Flag to prevent auto-redirect while the signup process is running
 let isSigningUp = false;
@@ -138,6 +140,49 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     // onAuthStateChanged below will redirect to journal.html
   } catch (error) {
     errorEl.textContent = error.message;
+  }
+});
+
+// FORGOT PASSWORD
+// Reuses the "Email or Username" field: if it looks like an email, we send the
+// reset link straight to it. If it's a username, we look up the real email first.
+forgotPasswordLink.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const identifier = document.getElementById("login-identifier").value.trim();
+  const errorEl = document.getElementById("login-error");
+  errorEl.style.color = "#a13d2b";
+  errorEl.textContent = "";
+
+  if (!identifier) {
+    errorEl.textContent = "Enter your email or username above first, then click 'Forgot password?' again.";
+    return;
+  }
+
+  forgotPasswordLink.textContent = "Sending...";
+
+  try {
+    let email = identifier;
+
+    if (!identifier.includes("@")) {
+      const usernameQuery = query(collection(db, "users"), where("username", "==", identifier));
+      const usernameSnap = await getDocs(usernameQuery);
+
+      if (usernameSnap.empty) {
+        errorEl.textContent = "No account found with that username.";
+        return;
+      }
+      email = usernameSnap.docs[0].data().email;
+    }
+
+    await sendPasswordResetEmail(auth, email);
+    errorEl.style.color = "#2d5a3d";
+    errorEl.textContent = "Password reset email sent! Check your inbox.";
+  } catch (error) {
+    errorEl.style.color = "#a13d2b";
+    errorEl.textContent = error.message;
+  } finally {
+    forgotPasswordLink.textContent = "Forgot password?";
   }
 });
 
