@@ -70,6 +70,9 @@
       <button type="button" class="ledger-tab" data-tab="bin" role="tab" aria-selected="false">
         <span class="ledger-tab-icon">🗑️</span>Bin
       </button>
+      <button type="button" class="ledger-tab" data-tab="settings" role="tab" aria-selected="false">
+        <span class="ledger-tab-icon">⚙️</span>Settings
+      </button>
       <button type="button" class="ledger-tab" data-tab="almanac" role="tab" aria-selected="false">
         <span class="ledger-tab-icon">🗓️</span>Almanac
       </button>
@@ -193,6 +196,107 @@
           <button type="button" id="empty-bin-btn" class="empty-bin-btn">Empty Bin</button>
         </div>
         <div id="bin-list" class="entries-list"></div>
+      </section>
+
+      <!-- SETTINGS PANEL -->
+      <section class="tab-panel hidden" id="panel-settings" data-panel="settings">
+        <div class="settings-grid">
+
+          <div class="card settings-card">
+            <h3 class="settings-card-title">Account</h3>
+            <p class="panel-intro" style="margin-bottom: 18px;">Manage your login details.</p>
+
+            <div class="settings-block">
+              <h4 class="settings-block-title">Change Email</h4>
+              <label class="settings-label">Current Password</label>
+              <div class="input-icon">
+                <span>🔒</span>
+                <input type="password" id="settings-email-password" placeholder="Current password" />
+              </div>
+              <label class="settings-label">New Email</label>
+              <div class="input-icon">
+                <span>📧</span>
+                <input type="email" id="settings-new-email" placeholder="new@email.com" />
+              </div>
+              <button type="button" id="change-email-btn" class="settings-btn">Update Email</button>
+              <p id="settings-email-error" class="error"></p>
+            </div>
+
+            <div class="settings-block">
+              <h4 class="settings-block-title">Change Password</h4>
+              <label class="settings-label">Current Password</label>
+              <div class="input-icon">
+                <span>🔒</span>
+                <input type="password" id="settings-current-password" placeholder="Current password" />
+              </div>
+              <label class="settings-label">New Password</label>
+              <div class="input-icon">
+                <span>🔒</span>
+                <input type="password" id="settings-new-password" placeholder="At least 8 characters" />
+              </div>
+              <label class="settings-label">Confirm New Password</label>
+              <div class="input-icon">
+                <span>🔒</span>
+                <input type="password" id="settings-confirm-password" placeholder="Re-enter new password" />
+              </div>
+              <button type="button" id="change-password-btn" class="settings-btn">Update Password</button>
+              <p id="settings-password-error" class="error"></p>
+            </div>
+
+            <div class="settings-block settings-danger">
+              <h4 class="settings-block-title settings-danger-title">Delete Account</h4>
+              <p class="settings-danger-text">This permanently deletes your account and every entry you've written. This cannot be undone.</p>
+              <label class="settings-label">Current Password</label>
+              <div class="input-icon">
+                <span>🔒</span>
+                <input type="password" id="settings-delete-password" placeholder="Current password" />
+              </div>
+              <button type="button" id="delete-account-btn" class="settings-btn settings-btn-danger">Delete My Account</button>
+              <p id="settings-delete-error" class="error"></p>
+            </div>
+          </div>
+
+          <div class="settings-side">
+            <div class="card settings-card">
+              <h3 class="settings-card-title">Default Page Style</h3>
+              <p class="panel-intro" style="margin-bottom: 14px;">Applied automatically to every new entry you start.</p>
+
+              <div class="ink-picker" id="settings-ink-picker">
+                <span class="toolbar-label">Ink:</span>
+                <button type="button" class="ink-dot ink-sepia selected" data-ink="sepia" title="Sepia"></button>
+                <button type="button" class="ink-dot ink-ivory" data-ink="ivory" title="Ivory"></button>
+                <button type="button" class="ink-dot ink-dustyrose" data-ink="dustyrose" title="Dusty Rose"></button>
+                <button type="button" class="ink-dot ink-toffee" data-ink="toffee" title="Toffee Taupe"></button>
+                <button type="button" class="ink-dot ink-stone" data-ink="stone" title="Stone"></button>
+                <button type="button" class="ink-dot ink-nude" data-ink="nude" title="Nude"></button>
+                <button type="button" class="ink-dot ink-darkrose" data-ink="darkrose" title="Dark Rose"></button>
+                <button type="button" class="ink-dot ink-blue" data-ink="blue" title="Prussian Blue"></button>
+                <button type="button" class="ink-dot ink-charcoal" data-ink="charcoal" title="Charcoal"></button>
+                <button type="button" class="ink-dot ink-olive" data-ink="olive" title="Olive"></button>
+              </div>
+
+              <div class="paper-picker" style="margin-top: 14px;">
+                <span class="toolbar-label">Paper:</span>
+                <select id="settings-paper-select">
+                  <option value="lined">Lined</option>
+                  <option value="ledger">Ledger</option>
+                  <option value="kraft">Kraft</option>
+                  <option value="music">Music Sheet</option>
+                </select>
+              </div>
+
+              <button type="button" id="save-preferences-btn" class="settings-btn" style="margin-top: 18px;">Save Default Style</button>
+              <p id="settings-preferences-msg" class="error"></p>
+            </div>
+
+            <div class="card settings-card">
+              <h3 class="settings-card-title">Your Data</h3>
+              <p class="panel-intro" style="margin-bottom: 14px;">Download a copy of everything you've written.</p>
+              <button type="button" id="export-data-btn" class="settings-btn">Export All Entries (.json)</button>
+            </div>
+          </div>
+
+        </div>
       </section>
 
       <!-- ALMANAC PANEL (calendar + mood stats + streak ledger) -->
