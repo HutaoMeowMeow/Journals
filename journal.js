@@ -1,5 +1,13 @@
 import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  onAuthStateChanged,
+  signOut,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateEmail,
+  updatePassword,
+  deleteUser
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection,
   addDoc,
@@ -8,6 +16,7 @@ import {
   where,
   orderBy,
   onSnapshot,
+  getDocs,
   deleteDoc,
   deleteField,
   doc,
@@ -65,6 +74,29 @@ const corkboard = document.getElementById("corkboard");
 const binList = document.getElementById("bin-list");
 const emptyBinBtn = document.getElementById("empty-bin-btn");
 
+// Settings elements
+const settingsEmailPassword = document.getElementById("settings-email-password");
+const settingsNewEmail = document.getElementById("settings-new-email");
+const changeEmailBtn = document.getElementById("change-email-btn");
+const settingsEmailError = document.getElementById("settings-email-error");
+
+const settingsCurrentPassword = document.getElementById("settings-current-password");
+const settingsNewPassword = document.getElementById("settings-new-password");
+const settingsConfirmPassword = document.getElementById("settings-confirm-password");
+const changePasswordBtn = document.getElementById("change-password-btn");
+const settingsPasswordError = document.getElementById("settings-password-error");
+
+const settingsDeletePassword = document.getElementById("settings-delete-password");
+const deleteAccountBtn = document.getElementById("delete-account-btn");
+const settingsDeleteError = document.getElementById("settings-delete-error");
+
+const settingsInkPicker = document.getElementById("settings-ink-picker");
+const settingsPaperSelect = document.getElementById("settings-paper-select");
+const savePreferencesBtn = document.getElementById("save-preferences-btn");
+const settingsPreferencesMsg = document.getElementById("settings-preferences-msg");
+
+const exportDataBtn = document.getElementById("export-data-btn");
+
 const BIN_RETENTION_DAYS = 7;
 const BIN_RETENTION_MS = BIN_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
@@ -82,6 +114,9 @@ let activeTab = "write";
 let isPurging = false;
 let currentEntryPhotoURL = null; // photo already saved on the entry being edited
 let removeExistingPhoto = false;  // true when the user removed that saved photo
+let userPreferences = {};         // { defaultInk, defaultPaper } saved on the user doc
+let settingsSelectedInk = "sepia";
+let settingsSelectedPaper = "lined";
 
 // Expanded vintage/nude ink palette
 const INK_LABELS = {
@@ -139,6 +174,10 @@ function switchTab(tabName) {
   if (tabName === "favorites") renderFavorites();
   if (tabName === "album") renderAlbum();
   if (tabName === "bin") renderBin();
+  if (tabName === "settings") {
+    applyDefaultStyleFromPreferences();
+    clearSettingsMessages();
+  }
   if (tabName === "almanac") {
     renderCalendar();
     renderMoodStats();
@@ -160,6 +199,8 @@ onAuthStateChanged(auth, async (user) => {
       if (userDoc.exists()) {
         const data = userDoc.data();
         welcomeText.textContent = `Welcome, ${data.fullName || data.username || "friend"}`;
+        userPreferences = data.preferences || {};
+        applyDefaultStyleFromPreferences();
       }
     } catch (err) {
       console.error("Could not load profile:", err);
@@ -199,6 +240,60 @@ paperSelect.addEventListener("change", () => {
 });
 // Set initial paper class to match default dropdown value
 entryText.classList.add(`paper-${selectedPaper}`);
+
+// Applies the user's saved default ink/paper to the write form (if not mid-edit)
+// and keeps the Settings panel pickers in sync with what's saved.
+function applyDefaultStyleFromPreferences() {
+  const defaultInk = userPreferences.defaultInk || "sepia";
+  const defaultPaper = userPreferences.defaultPaper || "lined";
+
+  if (!editingEntryId) {
+    selectedInk = defaultInk;
+    selectedPaper = defaultPaper;
+    inkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.toggle("selected", b.dataset.ink === defaultInk));
+    paperSelect.value = defaultPaper;
+    removeInkClasses(entryText);
+    removePaperClasses(entryText);
+    entryText.classList.add(`ink-${defaultInk}`, `paper-${defaultPaper}`);
+  }
+
+  settingsSelectedInk = defaultInk;
+  settingsSelectedPaper = defaultPaper;
+  settingsInkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.toggle("selected", b.dataset.ink === defaultInk));
+  settingsPaperSelect.value = defaultPaper;
+}
+
+settingsInkPicker.querySelectorAll(".ink-dot").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    settingsInkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    settingsSelectedInk = btn.dataset.ink;
+  });
+});
+
+settingsPaperSelect.addEventListener("change", () => {
+  settingsSelectedPaper = settingsPaperSelect.value;
+});
+
+savePreferencesBtn.addEventListener("click", async () => {
+  if (!currentUserId) return;
+  savePreferencesBtn.disabled = true;
+  settingsPreferencesMsg.textContent = "";
+  try {
+    const preferences = { defaultInk: settingsSelectedInk, defaultPaper: settingsSelectedPaper };
+    await updateDoc(doc(db, "users", currentUserId), { preferences });
+    userPreferences = preferences;
+    applyDefaultStyleFromPreferences();
+    settingsPreferencesMsg.style.color = "#2d5a3d";
+    settingsPreferencesMsg.textContent = "Saved! New entries will start with this style.";
+    showToast("Default style saved", "success");
+  } catch (error) {
+    settingsPreferencesMsg.style.color = "#a13d2b";
+    settingsPreferencesMsg.textContent = error.message;
+  } finally {
+    savePreferencesBtn.disabled = false;
+  }
+});
 
 // ---------- FAVORITE TOGGLE (for the entry being written/edited) ----------
 favoriteToggleBtn.addEventListener("click", () => {
@@ -325,16 +420,16 @@ function resetForm() {
   cancelEditBtn.classList.add("hidden");
 
   // Reset ink back to default
-  selectedInk = "sepia";
-  inkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.toggle("selected", b.dataset.ink === "sepia"));
+  selectedInk = userPreferences.defaultInk || "sepia";
+  inkPicker.querySelectorAll(".ink-dot").forEach((b) => b.classList.toggle("selected", b.dataset.ink === selectedInk));
   removeInkClasses(entryText);
-  entryText.classList.add("ink-sepia");
+  entryText.classList.add(`ink-${selectedInk}`);
 
   // Reset paper back to default
-  selectedPaper = "lined";
-  paperSelect.value = "lined";
+  selectedPaper = userPreferences.defaultPaper || "lined";
+  paperSelect.value = selectedPaper;
   removePaperClasses(entryText);
-  entryText.classList.add("paper-lined");
+  entryText.classList.add(`paper-${selectedPaper}`);
 
   // Reset favorite toggle
   selectedFavorite = false;
@@ -1130,4 +1225,163 @@ photoLightboxOverlay.addEventListener("click", (e) => {
 // ---------- LOG OUT ----------
 logoutBtn.addEventListener("click", async () => {
   await signOut(auth);
+});
+
+// ================= SETTINGS: ACCOUNT =================
+
+function clearSettingsMessages() {
+  settingsEmailError.textContent = "";
+  settingsPasswordError.textContent = "";
+  settingsDeleteError.textContent = "";
+  settingsPreferencesMsg.textContent = "";
+}
+
+// Firebase requires a recent login before sensitive changes (email, password, delete)
+async function reauthenticate(currentPassword) {
+  const user = auth.currentUser;
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  return user;
+}
+
+// ---------- CHANGE EMAIL ----------
+changeEmailBtn.addEventListener("click", async () => {
+  const currentPassword = settingsEmailPassword.value;
+  const newEmail = settingsNewEmail.value.trim();
+  settingsEmailError.style.color = "#a13d2b";
+  settingsEmailError.textContent = "";
+
+  if (!currentPassword || !newEmail) {
+    settingsEmailError.textContent = "Please fill in both fields.";
+    return;
+  }
+
+  changeEmailBtn.disabled = true;
+  try {
+    const user = await reauthenticate(currentPassword);
+    await updateEmail(user, newEmail);
+    await updateDoc(doc(db, "users", user.uid), { email: newEmail });
+
+    settingsEmailPassword.value = "";
+    settingsNewEmail.value = "";
+    settingsEmailError.style.color = "#2d5a3d";
+    settingsEmailError.textContent = "Email updated!";
+    showToast("Email updated", "success");
+  } catch (error) {
+    settingsEmailError.style.color = "#a13d2b";
+    settingsEmailError.textContent = error.message;
+  } finally {
+    changeEmailBtn.disabled = false;
+  }
+});
+
+// ---------- CHANGE PASSWORD ----------
+changePasswordBtn.addEventListener("click", async () => {
+  const currentPassword = settingsCurrentPassword.value;
+  const newPassword = settingsNewPassword.value;
+  const confirmPassword = settingsConfirmPassword.value;
+  settingsPasswordError.style.color = "#a13d2b";
+  settingsPasswordError.textContent = "";
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    settingsPasswordError.textContent = "Please fill in all fields.";
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    settingsPasswordError.textContent = "New passwords do not match.";
+    return;
+  }
+  if (newPassword.length < 8) {
+    settingsPasswordError.textContent = "New password must be at least 8 characters.";
+    return;
+  }
+
+  changePasswordBtn.disabled = true;
+  try {
+    const user = await reauthenticate(currentPassword);
+    await updatePassword(user, newPassword);
+
+    settingsCurrentPassword.value = "";
+    settingsNewPassword.value = "";
+    settingsConfirmPassword.value = "";
+    settingsPasswordError.style.color = "#2d5a3d";
+    settingsPasswordError.textContent = "Password updated!";
+    showToast("Password updated", "success");
+  } catch (error) {
+    settingsPasswordError.style.color = "#a13d2b";
+    settingsPasswordError.textContent = error.message;
+  } finally {
+    changePasswordBtn.disabled = false;
+  }
+});
+
+// ---------- DELETE ACCOUNT ----------
+deleteAccountBtn.addEventListener("click", async () => {
+  const currentPassword = settingsDeletePassword.value;
+  settingsDeleteError.style.color = "#a13d2b";
+  settingsDeleteError.textContent = "";
+
+  if (!currentPassword) {
+    settingsDeleteError.textContent = "Enter your password to confirm.";
+    return;
+  }
+
+  if (!confirm("This permanently deletes your account and every entry you've written. This cannot be undone. Continue?")) {
+    return;
+  }
+
+  deleteAccountBtn.disabled = true;
+  try {
+    const user = await reauthenticate(currentPassword);
+
+    // Remove every entry that belongs to this account (bin included)
+    const entriesQuery = query(collection(db, "entries"), where("userId", "==", user.uid));
+    const entriesSnap = await getDocs(entriesQuery);
+    await Promise.all(entriesSnap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+
+    // Remove the profile doc
+    await deleteDoc(doc(db, "users", user.uid));
+
+    // Finally, remove the auth account itself — this signs the user out automatically
+    await deleteUser(user);
+
+    showToast("Account deleted", "success");
+  } catch (error) {
+    settingsDeleteError.style.color = "#a13d2b";
+    settingsDeleteError.textContent = error.message;
+    deleteAccountBtn.disabled = false;
+  }
+});
+
+// ---------- EXPORT DATA ----------
+exportDataBtn.addEventListener("click", () => {
+  if (allEntries.length === 0) {
+    showToast("No entries to export yet", "error");
+    return;
+  }
+
+  const exportable = allEntries.map((entry) => ({
+    title: entry.title || "Untitled Entry",
+    text: entry.text || "",
+    mood: entry.mood || null,
+    inkColor: entry.inkColor || null,
+    paper: entry.paper || null,
+    favorite: !!entry.favorite,
+    deleted: !!entry.deleted,
+    dateKey: entry.dateKey || null,
+    createdAt: entry.createdAt?.toDate ? entry.createdAt.toDate().toISOString() : null,
+    photoURL: entry.photoURL || null
+  }));
+
+  const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `journal-export-${toDateKey(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  showToast(`Exported ${exportable.length} entries`, "success");
 });
