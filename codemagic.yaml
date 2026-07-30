@@ -5,6 +5,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: development
+        bundle_identifier: com.journal.app
       vars:
         BUNDLE_ID: "com.journal.app"
       cocoapods: default
