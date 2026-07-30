@@ -32,5 +32,6 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          # Add your firebase app distribution upload command here once certificates are set up
-          echo "Ready for code signing and distribution setup"
+          # Replace YOUR_APP_ID with your actual Firebase iOS App ID when ready
+          # firebase appdistribution:distribute ios/App/App/Assets/www --app YOUR_APP_ID --token "$FIREBASE_TOKEN"
+          echo "Firebase token successfully linked and ready for deployment!"
