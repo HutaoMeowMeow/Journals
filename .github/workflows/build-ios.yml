@@ -1,4 +1,4 @@
-name: Build iOS App
+name: Build and Upload iOS App
 
 on:
   push:
@@ -16,8 +16,21 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies & Build Web Assets
+        run: |
+          npm install
+          npm run build
 
-      - name: Sync Capacitor iOS
-        run: npx cap sync ios
+      - name: Initialize Capacitor iOS
+        run: |
+          npx cap sync ios
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Upload to Firebase App Distribution
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          # Add your firebase app distribution upload command here once certificates are set up
+          echo "Ready for code signing and distribution setup"
