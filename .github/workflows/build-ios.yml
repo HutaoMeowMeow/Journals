@@ -14,7 +14,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Dependencies & Build Web Assets
         run: |
@@ -32,6 +32,4 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          # Replace YOUR_APP_ID with your actual Firebase iOS App ID when ready
-          # firebase appdistribution:distribute ios/App/App/Assets/www --app YOUR_APP_ID --token "$FIREBASE_TOKEN"
           echo "Firebase token successfully linked and ready for deployment!"
