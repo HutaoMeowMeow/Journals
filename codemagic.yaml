@@ -1,10 +1,10 @@
 workflows:
   ios-workflow:
-    name: iOS Build & Firebase Distribution
+    name: iOS App Build
     max_build_duration: 60
     environment:
-      groups:
-        - firebase_credentials # Optional if you want to use env variables
+      ios_signing:
+        distribution_type: development
       vars:
         BUNDLE_ID: "com.journal.app"
       cocoapods: default
@@ -18,5 +18,10 @@ workflows:
       - name: Build web assets
         script: |
           npm run build --if-present
+      - name: Build iOS App (.ipa)
+        script: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release archive -archivePath $HOME/Library/Developer/Xcode/Archives/App.xcarchive CODE_SIGN_STYLE=Automatic
+          xcodebuild -exportArchive -archivePath $HOME/Library/Developer/Xcode/Archives/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/
     artifacts:
-      - ios/App/App/build/**/*.ipa
+      - ios/App/build/*.ipa
