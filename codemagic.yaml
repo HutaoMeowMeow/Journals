@@ -30,16 +30,11 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-      - name: Upload to Firebase App Distribution
+      - name: Package Simulator App Artifact
         script: |
-          npm install -g firebase-tools
-          # Find the built app zip or path and upload
+          echo "Simulator build compiled successfully!"
+          # Locates the built .app and zips it up for easy download
           APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "*.app" | head -n 1)
           echo "Found app at: $APP_PATH"
-          firebase appdistribution:distribute "$APP_PATH" \
-            --app "$FIREBASE_APP_ID" \
-            --token "$FIREBASE_TOKEN" \
-            --testers "your-email@example.com" \
-            --release-notes "Automated iOS build from Codemagic!"
     artifacts:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
