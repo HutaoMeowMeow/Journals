@@ -10,12 +10,13 @@ workflows:
       - name: Install npm dependencies
         script: |
           npm install
-      - name: Sync Capacitor iOS
-        script: |
-          npx cap sync ios
       - name: Build web assets
         script: |
           npm run build --if-present
+      - name: Add Capacitor iOS Platform
+        script: |
+          npx cap add ios
+          npx cap sync ios
       - name: Build iOS Simulator App
         script: |
           xcodebuild build \
