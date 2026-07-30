@@ -18,7 +18,7 @@ workflows:
           npm run build --if-present
       - name: Compile iOS Simulator App
         script: |
-          cd ios/App
+          cd ios/App || exit 1
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
     artifacts:
       - ios/App/build/**/*.app
