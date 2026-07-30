@@ -1,0 +1,22 @@
+workflows:
+  ios-workflow:
+    name: iOS Build & Firebase Distribution
+    max_build_duration: 60
+    environment:
+      groups:
+        - firebase_credentials # Optional if you want to use env variables
+      vars:
+        BUNDLE_ID: "com.journal.app"
+      cocoapods: default
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Initialize Capacitor iOS
+        script: |
+          npx cap sync ios
+      - name: Build web assets
+        script: |
+          npm run build --if-present
+    artifacts:
+      - ios/App/App/build/**/*.ipa
