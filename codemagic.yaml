@@ -5,6 +5,8 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.journal.app"
+      groups:
+        - firebase_group
     scripts:
       - name: Install npm dependencies
         script: |
@@ -29,3 +31,10 @@ workflows:
             CODE_SIGNING_ALLOWED=NO
     artifacts:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+    publishing:
+      firebase:
+        firebase_token: $FIREBASE_TOKEN
+        app_id: $FIREBASE_APP_ID
+        testers:
+          - your-email@example.com   # Change this to your tester email address
+        release_notes: "Automatic deployment from Codemagic!"
