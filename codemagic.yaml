@@ -10,9 +10,8 @@ workflows:
       - name: Install npm dependencies
         script: |
           npm install
-      - name: Add and Initialize Capacitor iOS
+      - name: Sync Capacitor iOS
         script: |
-          npx cap add ios || true
           npx cap sync ios
       - name: Build web assets
         script: |
@@ -28,5 +27,4 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
     artifacts:
-      - ios/App/build/**/*.app
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
