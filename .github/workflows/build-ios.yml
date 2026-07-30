@@ -30,4 +30,4 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          echo "Firebase token successfully linked and ready for deployment!"
+          firebase appdistribution:distribute ios/App/App/Public --app 1:82648709349:ios:f934084584c5467db7bc0c --token "$FIREBASE_TOKEN"
