@@ -5,6 +5,7 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.journal.app"
+        FIREBASE_APP_ID: "1:82648709349:ios:f934084584c5467db7bc0c"
       groups:
         - firebase_group
     scripts:
@@ -29,12 +30,16 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
+      - name: Upload to Firebase App Distribution
+        script: |
+          npm install -g firebase-tools
+          # Find the built app zip or path and upload
+          APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "*.app" | head -n 1)
+          echo "Found app at: $APP_PATH"
+          firebase appdistribution:distribute "$APP_PATH" \
+            --app "$FIREBASE_APP_ID" \
+            --token "$FIREBASE_TOKEN" \
+            --testers "your-email@example.com" \
+            --release-notes "Automated iOS build from Codemagic!"
     artifacts:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-    publishing:
-      firebase:
-        firebase_token: $FIREBASE_TOKEN
-        app_id: $FIREBASE_APP_ID
-        testers:
-          - your-email@example.com   # Change this to your tester email address
-        release_notes: "Automatic deployment from Codemagic!"
