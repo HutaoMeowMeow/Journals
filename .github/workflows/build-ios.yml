@@ -16,10 +16,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Dependencies & Build Web Assets
-        run: |
-          npm install
-          npm run build
+      - name: Install Dependencies
+        run: npm install
 
       - name: Initialize Capacitor iOS
         run: |
