@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">JournalApp</string>
+    <string name="title_activity_main">JournalApp</string>
+    <string name="package_name">com.journal.app</string>
+    <string name="custom_url_scheme">com.journal.app</string>
+</resources>
