@@ -20,7 +20,7 @@ workflows:
       - name: Build iOS Simulator App
         script: |
           xcodebuild build \
-            -workspace ios/App/App.xcworkspace \
+            -project ios/App/App.xcodeproj \
             -scheme App \
             -sdk iphonesimulator \
             -configuration Debug \
