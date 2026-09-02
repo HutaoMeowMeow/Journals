@@ -548,6 +548,8 @@ cancelEditBtn.addEventListener("click", () => {
 
 // ---------- LOAD ENTRIES (live) ----------
 function loadEntries() {
+  console.log("[Journal] Loading entries for userId:", currentUserId);
+
   const q = query(
     collection(db, "entries"),
     where("userId", "==", currentUserId),
@@ -559,6 +561,12 @@ function loadEntries() {
       id: docSnap.id,
       ...docSnap.data()
     }));
+    console.log("[Journal] Loaded", allEntries.length, "entries for userId:", currentUserId);
+
+    if (allEntries.length === 0) {
+      console.warn("[Journal] No entries found. Possible causes: entries are missing the 'userId' field, belong to a different account, or the database rules are blocking reads.");
+    }
+
     renderCalendar();
     if (activeTab === "pages") renderEntries();
     if (activeTab === "favorites") renderFavorites();
@@ -569,7 +577,9 @@ function loadEntries() {
     updateStreakBadge();
     purgeExpiredBinEntries();
   }, (error) => {
-    console.error("onSnapshot error:", error);
+    console.error("[Journal] onSnapshot error:", error);
+    entriesList.innerHTML = `<p class="no-entries" style="color:#a13d2b;">Could not load entries: ${error.message}. Check browser console for details.</p>`;
+    showToast("Failed to load entries: " + error.message, "error");
   });
 }
 
@@ -796,14 +806,6 @@ function buildBinCard(entry) {
 function renderEntries() {
   const searchTerm = searchInput.value.trim().toLowerCase();
   const isSearching = searchTerm.length > 0;
-
-  // Don't show anything until the user picks a date on the calendar (or searches)
-  if (!selectedDateFilter && !isSearching) {
-    entriesList.innerHTML = `<p class="no-entries">Select a date from the Almanac, or search, to view your pages.</p>`;
-    filterLabel.classList.add("hidden");
-    clearDateFilterBtn.classList.add("hidden");
-    return;
-  }
 
   let filtered = activeEntries();
 

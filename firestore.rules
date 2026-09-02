@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      // The owner can read + write their own profile (preferences, delete account, etc.)
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Any signed-in user can read user docs so the login / forgot-password
+      // flows can resolve a username into the matching email. Docs only
+      // contain display name, username, email and UI preferences — nothing
+      // sensitive like passwords or journal entries.
+      allow read: if request.auth != null;
+    }
+    match /entries/{entryId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+  }
+}
